@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RoomType {
+  GROUP
+  DIRECT
+}
+
+enum RoomMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model User {
+  id                          String    @id @default(uuid())
+  username                    String    @unique
+  email                       String    @unique
+  passwordHash                String
+  emailVerified               Boolean   @default(false)
+  emailVerificationToken      String?
+  emailVerificationExpiresAt  DateTime?
+  pendingEmail                String?
+  avatarUrl                   String?
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+
+  roomMemberships RoomMember[]
+  messages        Message[]
+
+  @@map("users")
+}
+
+model Room {
+  id        String   @id @default(uuid())
+  type      RoomType
+  name      String?
+  directKey String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members  RoomMember[]
+  messages Message[]
+
+  @@map("rooms")
+}
+
+model RoomMember {
+  id       String         @id @default(uuid())
+  roomId   String
+  userId   String
+  role     RoomMemberRole @default(MEMBER)
+  joinedAt DateTime       @default(now())
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@map("room_members")
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  roomId    String
+  senderId  String?
+  content   String
+  createdAt DateTime @default(now())
+
+  room   Room  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender User? @relation(fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([roomId])
+  @@map("messages")
+}
