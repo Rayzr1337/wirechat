@@ -4,9 +4,10 @@
     "composite": true,
     "declaration": true,
     "declarationMap": true,
+    "noEmit": false,
     "rootDir": ".",
     "outDir": "dist-node",
     "types": ["node"]
   },
-  "include": ["prisma7.config.ts", "prisma/**/*.ts"],
+  "include": ["prisma7.config.ts", "prisma/**/*.ts"]
 }
