@@ -17,6 +17,10 @@ export class UserRepository {
     async getUserByEmail(email: string): Promise<User | null> {
         return prisma.user.findUnique({ where: { email } });
     }
+    
+    async getUserByVerificationToken(token: string): Promise<User | null> {
+        return prisma.user.findUnique({ where: { emailVerificationToken: token } });
+    }
 
     async updateUser(id: string, data: Prisma.UserUpdateInput): Promise<User> {
         return prisma.user.update({ where: { id }, data });
