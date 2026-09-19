@@ -19,7 +19,7 @@
     "noUnusedLocals": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/types/**/*.d.ts"],
   "exclude": ["node_modules", "dist", "dist-node", "tests"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

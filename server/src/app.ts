@@ -1,4 +1,6 @@
 import express, { type Request, type Response, type NextFunction } from "express";
+import { errorHandler } from "./middleware/error.middleware";
+
 
 export function createApp() {
     const app = express();
@@ -16,6 +18,8 @@ export function createApp() {
         console.error(err);
         res.status(500).json({ error: "Internal server error", message: err.message });
     });
+
+    app.use((err: unknown, req: Request, res: Response, next: NextFunction) => errorHandler(err, res));
 
     return app;
 }
