@@ -7,6 +7,7 @@ const secret = process.env.JWT_SECRET;
 export function isUser(req: Request, res: Response, next: NextFunction) {
   if (!secret) throw new Error("JWT Secret is not defined!");
 
+  console.log(req.cookies);
   const token = req.cookies.token;
   if (!token) return next(new AppError(401, "UNAUTHORIZED", "Not logged in."));
 

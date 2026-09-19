@@ -42,7 +42,7 @@ export function issueToken(userId: string) {
 export async function issueWsTicket(userId: string) {
   const ticket = crypto.randomUUID();
   await redisClient.set(`ticket:${ticket}`, userId, {
-    EX: 10
+    EX: 300
   });
 
   return ticket;
