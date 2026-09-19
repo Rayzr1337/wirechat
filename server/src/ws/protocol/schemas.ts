@@ -66,7 +66,7 @@ export const userUpdatedSchema = z.object({
 export const errorSchema = z.object({
     type: z.literal("ERROR"),
     payload: z.object({ 
-        code: z.enum(["INVALID_MESSAGE", "ROOM_NOT_FOUND", "USER_NOT_FOUND", "UNAUTHORIZED", "NOT_IN_ROOM"]),
+        code: z.enum(["INVALID_MESSAGE", "ROOM_NOT_FOUND", "USER_NOT_FOUND", "UNAUTHORIZED", "NOT_IN_ROOM", "EMAIL_NOT_VERIFIED"]),
         message: z.string().trim().min(1).max(200) })
 });
 

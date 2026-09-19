@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import * as authService from "../services/auth.service";
 import type { RegisterBody, LoginBody } from "../schemas/user.schema";
+import { initiateEmailVerification } from "../services/user.service";
 
 function setAuthCookie(res: Response, token: string) {
   res.cookie("token", token, {
@@ -13,6 +14,13 @@ function setAuthCookie(res: Response, token: string) {
 
 export async function register(req: Request<{}, {}, RegisterBody>, res: Response) {
   const user = await authService.createUser(req.body);
+
+  try {
+      await initiateEmailVerification(user.id);
+    } catch (err) {
+      console.error("Failed to issue verification token for user", user.id, err);
+    }
+
   const token = authService.issueToken(user.id);
   setAuthCookie(res, token);
   res.status(201).json({ id: user.id, username: user.username, email: user.email });
