@@ -108,6 +108,7 @@ export async function requestEmailChange(userId: string, newEmail: string) {
     await userRepository.updateUser(userId, {
         emailVerificationToken: token,
         emailVerificationExpiresAt: expiresAt,
+        emailVerified: false,
         pendingEmail: newEmail
     });
     
