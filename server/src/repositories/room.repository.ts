@@ -1,29 +1,35 @@
-import type { Room, Prisma, RoomMember, RoomMemberRole } from "../generated/prisma/client";
+import type { Room, Prisma, PrismaClient, RoomMember, RoomMemberRole } from "../generated/prisma/client";
 import { prisma } from "../libs/prisma";
 
+export type client = PrismaClient | Prisma.TransactionClient;
+
 class RoomRepository {
-    async createRoom(data: Prisma.RoomCreateInput): Promise<Room> {
-        return prisma.room.create({ data });
+    async createRoom(data: Prisma.RoomCreateInput, thisClient: client = prisma): Promise<Room> {
+        return thisClient.room.create({ data });
     }
 
-    async getRoomById(id: string): Promise<Room | null> {
-        return prisma.room.findUnique({ where: { id } });
+    async getRoomById(id: string, thisClient: client = prisma): Promise<Room | null> {
+        return thisClient.room.findUnique({ where: { id } });
     }
 
-    async updateRoom(id: string, data: Prisma.RoomUpdateInput): Promise<Room> {
-        return prisma.room.update({ where: { id }, data });
+    async getUserRooms(userId: string, thisClient: client = prisma) : Promise<{ room: Room; role: RoomMemberRole }[]> {
+        return thisClient.roomMember.findMany({ where: { userId }, include: { room: true } });
     }
 
-    async deleteRoom(id: string): Promise<Room> {
-        return prisma.room.delete({ where: { id } });
+    async updateRoom(id: string, data: Prisma.RoomUpdateInput, thisClient: client = prisma): Promise<Room> {
+        return thisClient.room.update({ where: { id }, data });
+    }
+
+    async deleteRoom(id: string, thisClient: client = prisma): Promise<Room> {
+        return thisClient.room.delete({ where: { id } });
     }
 
     async findRoomByDirectKey(directKey: string): Promise<Room | null> {
         return prisma.room.findUnique({ where: { directKey } });
     }
 
-    async getRoomMembers(roomId: string): Promise<RoomMember[]> {
-        return prisma.roomMember.findMany({ where: { roomId }, include: { user: true } });
+    async getRoomMembers(roomId: string, thisClient: client = prisma): Promise<RoomMember[]> {
+        return thisClient.roomMember.findMany({ where: { roomId }, include: { user: true } });
     }
 
     async isMemberOfRoom(roomId: string, userId: string): Promise<boolean> {
@@ -38,8 +44,8 @@ class RoomRepository {
         return member !== null;
     }
 
-    async addMemberToRoom(roomId: string, userId: string, role: RoomMemberRole = "MEMBER"): Promise<RoomMember> {
-        return prisma.roomMember.create({
+    async addMemberToRoom(roomId: string, userId: string, role: RoomMemberRole = "MEMBER", thisClient: client = prisma): Promise<RoomMember> {
+        return thisClient.roomMember.create({
             data: {
                 roomId,
                 userId,
@@ -48,8 +54,8 @@ class RoomRepository {
         });
     }
     
-    async removeMemberFromRoom(roomId: string, userId: string): Promise<RoomMember> {
-        return prisma.roomMember.delete({
+    async removeMemberFromRoom(roomId: string, userId: string, thisClient: client = prisma): Promise<RoomMember> {
+        return thisClient.roomMember.delete({
             where: {
                 roomId_userId: {
                     roomId,
@@ -59,8 +65,8 @@ class RoomRepository {
         });
     }
 
-    async changeRoomMemberRole(roomId: string, userId: string, newRole: RoomMemberRole): Promise<RoomMember> {
-        return prisma.roomMember.update({
+    async changeRoomMemberRole(roomId: string, userId: string, newRole: RoomMemberRole, thisClient: client = prisma): Promise<RoomMember> {
+        return thisClient.roomMember.update({
             where: {
                 roomId_userId: {
                     roomId,
