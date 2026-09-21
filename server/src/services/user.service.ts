@@ -8,7 +8,7 @@ import crypto from "node:crypto";
 export async function getUserById(id: string) {
     const user = await userRepository.getUserById(id);
     if (!user) {
-        throw new AppError(404, "NOT_FOUND", "User not found!");
+        throw new AppError(404, "USER_NOT_FOUND", "User not found!");
     }
     return user;
 }
@@ -16,7 +16,7 @@ export async function getUserById(id: string) {
 export async function getUserByUsername(username: string) {
     const user = await userRepository.getUserByUsername(username);
     if (!user) {
-        throw new AppError(404, "NOT_FOUND", "User not found!");
+        throw new AppError(404, "USER_NOT_FOUND", "User not found!");
     }
     return user;
 }  
@@ -24,7 +24,7 @@ export async function getUserByUsername(username: string) {
 export async function getUserByEmail(email: string) { 
     const user = await userRepository.getUserByEmail(email);
     if (!user) {
-        throw new AppError(404, "NOT_FOUND", "User not found!");
+        throw new AppError(404, "USER_NOT_FOUND", "User not found!");
     }
     return user;
 }
@@ -32,7 +32,7 @@ export async function getUserByEmail(email: string) {
 export async function updateUser(id: string, data: { username?: string; avatarUrl?: string }) {
     const user = await userRepository.getUserById(id);
     if (!user) {
-        throw new AppError(404, "NOT_FOUND", "User not found!");
+        throw new AppError(404, "USER_NOT_FOUND", "User not found!");
     }
 
     if (data.username && data.username !== user.username) {
@@ -48,7 +48,7 @@ export async function updateUser(id: string, data: { username?: string; avatarUr
 export async function changePassword(id: string, oldPassword: string, newPassword: string) {
     const user = await userRepository.getUserById(id);
     if (!user) {
-        throw new AppError(404, "NOT_FOUND", "User not found!");
+        throw new AppError(404, "USER_NOT_FOUND", "User not found!");
     }
     
     if (!await bcrypt.compare(oldPassword, user.passwordHash)) {
@@ -62,7 +62,7 @@ export async function changePassword(id: string, oldPassword: string, newPasswor
 export async function deleteUser(id: string) {
     const user = await userRepository.getUserById(id);
     if (!user) {
-        throw new AppError(404, "NOT_FOUND", "User not found!");
+        throw new AppError(404, "USER_NOT_FOUND", "User not found!");
     }
     return userRepository.deleteUser(id);
 }
@@ -72,7 +72,7 @@ export async function deleteUser(id: string) {
 export async function initiateEmailVerification(userId: string) {
     const user = await userRepository.getUserById(userId);
     if (!user) {
-    throw new AppError(404, "NOT_FOUND", "User not found!");
+    throw new AppError(404, "USER_NOT_FOUND", "User not found!");
     }
 
     if (user.emailVerified && !user.pendingEmail) {
@@ -94,7 +94,7 @@ export async function initiateEmailVerification(userId: string) {
 export async function requestEmailChange(userId: string, newEmail: string) {
     const user = await userRepository.getUserById(userId);
     if (!user) {
-        throw new AppError(404, "NOT_FOUND", "User not found!");
+        throw new AppError(404, "USER_NOT_FOUND", "User not found!");
     }
 
     const existing = await userRepository.getUserByEmail(newEmail);
