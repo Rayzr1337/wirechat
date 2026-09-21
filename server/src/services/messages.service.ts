@@ -32,8 +32,11 @@ export async function editMessage(messageId: string, editorId: string, newConten
         throw new AppError(403, "UNAUTHORIZED", "You can only edit your own messages.");
     }
     
-    const updated = await messageRepository.updateMessage(messageId, { content: newContent });
-    return { ...updated, editedAt: new Date() };
+    const updated = await messageRepository.updateMessage(messageId, { 
+        content: newContent,
+        editedAt: new Date()
+    });
+    return updated;
 }
 
 export async function deleteMessage(messageId: string, deleterId: string) {
