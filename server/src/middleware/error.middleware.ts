@@ -1,11 +1,12 @@
 import type { Request, Response, NextFunction } from "express";
+import type { ErrorCode } from "../ws/protocol/schemas";
 
 type controllerFunc = (req: Request<any, any, any, any>, res: Response, next: NextFunction) => Promise<any>;
 
 export class AppError extends Error {
   constructor(
     public statusCode: number,
-    public code: string,
+    public code: ErrorCode,
     message: string,
     public details?: unknown,
   ) {

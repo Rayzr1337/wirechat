@@ -21,6 +21,16 @@ export const typingIndicatorSchema = z.object({
     payload: z.object({ roomId: z.uuid() })
 });
 
+export const editMessageSchema = z.object({
+    type: z.literal("EDIT_MESSAGE"),
+    payload: z.object({ messageId: z.uuid(), content: z.string().trim().min(1).max(2000) })
+});
+
+export const deleteMessageSchema = z.object({
+    type: z.literal("DELETE_MESSAGE"),
+    payload: z.object({ messageId: z.uuid() })
+});
+
 // Outbound messages:
 export const outboundMessageSchema = z.object({
     type: z.literal("MESSAGE"),
@@ -63,10 +73,63 @@ export const userUpdatedSchema = z.object({
     ),
 });
 
+export const messageEditedSchema = z.object({
+    type: z.literal("MESSAGE_EDITED"),
+    payload: z.object({ 
+        id: z.uuid(),
+        roomId: z.uuid(),
+        content: z.string().trim().min(1).max(2000),
+        editedAt: z.iso.datetime()
+    })
+});
+
+export const messageDeletedSchema = z.object({
+    type: z.literal("MESSAGE_DELETED"),
+    payload: z.object({ 
+        id: z.uuid(),
+        roomId: z.uuid()
+    })
+});
+
+export const errorCodeList = [
+  "INVALID_MESSAGE",
+  "ROOM_NOT_FOUND",
+  "USER_NOT_FOUND",
+  "MESSAGE_NOT_FOUND",
+  "UNAUTHORIZED",
+  "NOT_IN_ROOM",
+  "EMAIL_NOT_VERIFIED",
+  "CONFLICT",
+  "INVALID_TOKEN",
+  "ALREADY_ADMIN",
+  "NOT_ADMIN",
+  "NOT_FOUND",
+  "FORBIDDEN",
+  "BAD_REQUEST",
+  "ALREADY_VERIFIED",
+  "VALIDATION_ERROR",
+  "CANNOT_LEAVE_DIRECT_ROOM",
+  "CANNOT_KICK_FROM_DIRECT_ROOM",
+  "CANNOT_JOIN_DIRECT_ROOM",
+  "ALREADY_MEMBER",
+  "CANNOT_CREATE_DIRECT_ROOM_WITH_SELF",
+  "GROUP_ROOM_REQUIRED",
+  "CANNOT_PROMOTE_SELF",
+  "CANNOT_KICK_SELF",
+  "CANNOT_TRANSFER_TO_SELF",
+  "OWNER_REQUIRED",
+  "ADMIN_OR_OWNER_REQUIRED",
+  "CANNOT_KICK_OWNER",
+  "CANNOT_KICK_ADMIN",
+  "ALREADY_OWNER",
+] as const;
+
+export type ErrorCode = typeof errorCodeList[number];
+
 export const errorSchema = z.object({
     type: z.literal("ERROR"),
     payload: z.object({ 
-        code: z.enum(["INVALID_MESSAGE", "ROOM_NOT_FOUND", "USER_NOT_FOUND", "UNAUTHORIZED", "NOT_IN_ROOM", "EMAIL_NOT_VERIFIED"]),
+        code: z.enum(errorCodeList),
         message: z.string().trim().min(1).max(200) })
 });
 
@@ -75,7 +138,9 @@ export const incomingMessageSchema = z.discriminatedUnion("type", [
     joinRoomSchema,
     leaveRoomSchema,
     inboundMessageSchema,
-    typingIndicatorSchema
+    typingIndicatorSchema,
+    editMessageSchema,
+    deleteMessageSchema
 ]);
 
 export const outgoingMessageSchema = z.discriminatedUnion("type", [
@@ -85,6 +150,8 @@ export const outgoingMessageSchema = z.discriminatedUnion("type", [
     outboundTypingIndicatorSchema,
     presenceUpdateSchema,
     userUpdatedSchema,
+    messageEditedSchema,
+    messageDeletedSchema,
     errorSchema
 ]);
 
