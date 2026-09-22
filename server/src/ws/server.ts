@@ -7,7 +7,7 @@ import { sendMessage, editMessage, deleteMessage } from "../services/messages.se
 import { joinRoom, leaveRoom, getRoomMembers } from "../services/rooms.service";
 import type { IncomingMessage, OutgoingMessage } from "./protocol/schemas";
 
-interface AuthenticatedSocket extends WebSocket {
+export interface AuthenticatedSocket extends WebSocket {
   user?: { id: string };
 }
 
