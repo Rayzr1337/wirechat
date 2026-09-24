@@ -1,8 +1,15 @@
 import { userRepository } from "../repositories/user.repository";
 import { AppError } from "../middleware/error.middleware";
 import { redisClient } from "../libs/redis";
+import { z } from "zod";
 import bcrypt  from "bcrypt";
 import crypto from "node:crypto";
+
+import { broadcastToRoom } from "../ws/broadcast";
+import { userUpdatedSchema } from "../ws/protocol/schemas";
+import { roomRepository } from "../repositories/room.repository";
+
+type userUpdatedMessage = z.infer<typeof userUpdatedSchema>;
 
 //crud operations for user
 export async function getUserById(id: string) {
@@ -42,7 +49,24 @@ export async function updateUser(id: string, data: { username?: string; avatarUr
         }
     }
 
-    return userRepository.updateUser(id, data); 
+    const updated = await userRepository.updateUser(id, data); 
+    if (data.username && data.username !== user.username 
+        || data.avatarUrl && data.avatarUrl !== user.avatarUrl) {
+        const updatedPayload: userUpdatedMessage = {
+        type: "USER_UPDATED",
+        payload: {
+            userId: user.id,
+            username: updated.username ?? undefined,
+        },
+        };
+
+        const memberships = await roomRepository.getRoomsForUser(id);
+        for (const membership of memberships) {
+        await broadcastToRoom(membership.roomId, updatedPayload);
+        }
+    }
+
+    return updated;
 }
 
 export async function changePassword(id: string, oldPassword: string, newPassword: string) {
