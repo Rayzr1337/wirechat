@@ -122,6 +122,7 @@ export const errorCodeList = [
   "CANNOT_KICK_OWNER",
   "CANNOT_KICK_ADMIN",
   "ALREADY_OWNER",
+  "INTERNAL_SERVER_ERROR",
 ] as const;
 
 export type ErrorCode = typeof errorCodeList[number];

@@ -3,6 +3,8 @@ import "./ws/server";
 import { prisma } from "./libs/prisma";
 import { redisClient as redis } from "./libs/redis";
 import { initBroadcastListener, closeBroadcastListener } from "./ws/broadcast";
+import { startHeartbeat, stopHeartbeat } from "./ws/heartbeat";
+import { startPresenceSweep, stopPresenceSweep } from "./ws/presence";
 
 const PORT = process.env.PORT || 3000;
 
@@ -17,6 +19,9 @@ async function main() {
         console.error("Failed to initialize broadcast listener:", error);
         process.exit(1);
     }
+    
+    startHeartbeat();
+    startPresenceSweep();
     
 
     server.on("error", (err) => {
@@ -33,6 +38,10 @@ async function main() {
         await new Promise<void>((resolve) => server.close(() => resolve()));
         console.log("HTTP server closed");
         await prisma.$disconnect();
+
+        stopHeartbeat();
+        stopPresenceSweep();
+
         await redis.quit();
         await closeBroadcastListener();
         console.log("Prisma and redis disconnected.");

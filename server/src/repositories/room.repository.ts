@@ -32,6 +32,10 @@ class RoomRepository {
         return thisClient.roomMember.findMany({ where: { roomId }, include: { user: true } });
     }
 
+    async getRoomsForUser(userId: string, thisClient: client = prisma): Promise<RoomMember[]> {
+        return thisClient.roomMember.findMany({ where: { userId } });
+    }
+
     async isMemberOfRoom(roomId: string, userId: string): Promise<boolean> {
         const member = await prisma.roomMember.findUnique({
             where: {
