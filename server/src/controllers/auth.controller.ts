@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import * as authService from "../services/auth.service";
-import type { RegisterBody, LoginBody } from "../schemas/user.schema";
-import { initiateEmailVerification } from "../services/user.service";
+import type { RegisterBody, LoginBody, VerifyEmailQuery } from "../schemas/user.schema";
+import { initiateEmailVerification, verifyEmail } from "../services/user.service";
 
 function setAuthCookie(res: Response, token: string) {
   res.cookie("token", token, {
@@ -45,4 +45,16 @@ export async function logout(_req: Request, res: Response) {
 export async function getWsTicket(req: Request, res: Response) {
   const ticket = await authService.issueWsTicket(req.user!.userId);
   res.json({ ticket });
+}
+
+export async function verifyEmailWithToken(req: Request<{}, {}, {}, VerifyEmailQuery>, res: Response) {
+    const { token } = req.query;
+    await verifyEmail(token);
+    res.json({ message: 'Email verified successfully.' });
+}
+
+export async function resendVerification(req: Request, res: Response) {
+    const userId = req.user!.userId;
+    await initiateEmailVerification(userId);
+    res.json({ message: 'Verification email resent.' });
 }

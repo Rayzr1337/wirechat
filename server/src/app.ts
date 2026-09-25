@@ -2,7 +2,12 @@ import express, { type Request, type Response, type NextFunction } from "express
 import cookieParser from "cookie-parser";
 import { errorHandler } from "./middleware/error.middleware";
 import { AppError } from "./middleware/error.middleware";
+
 import { authRouter } from "./routes/auth.routes";
+import { usersRouter } from "./routes/user.routes";
+import { messagesRouter } from "./routes/messages.routes";
+import { roomsRouter } from "./routes/rooms.routes";
+
 
 
 export function createApp() {
@@ -15,7 +20,10 @@ export function createApp() {
     });
 
     app.use("/api/auth", authRouter);
-    
+    app.use("/api/users", usersRouter);
+    app.use("/api/messages", messagesRouter);
+    app.use("/api/rooms", roomsRouter);
+
     app.use((req: Request, res: Response, next: NextFunction) => {
         next(new AppError(404, "NOT_FOUND", `Cannot ${req.method} ${req.originalUrl}`));
     });
