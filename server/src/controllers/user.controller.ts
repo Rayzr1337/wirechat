@@ -9,7 +9,13 @@ import type {
 export async function getMe(req: Request, res: Response) {
     const userId = req.user!.userId;
     const user = await usersService.getUserById(userId);
-    res.json({ id: user.id, username: user.username, email: user.email, avatarUrl: user.avatarUrl, emailVerified: user.emailVerified });
+    res.json({ id: user.id, 
+        username: user.username, 
+        email: user.email, 
+        avatarUrl: user.avatarUrl, 
+        emailVerified: user.emailVerified,
+        pendingEmail: user.pendingEmail ?? undefined
+    });
 }
 
 export async function updateProfile(req: Request<{}, {}, UpdateProfileBody>, res: Response) {
