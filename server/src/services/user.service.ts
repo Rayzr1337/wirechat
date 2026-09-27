@@ -9,6 +9,8 @@ import { broadcastToRoom } from "../ws/broadcast";
 import { userUpdatedSchema } from "../ws/protocol/schemas";
 import { roomRepository } from "../repositories/room.repository";
 
+import * as emailService from "./email.service";
+
 type userUpdatedMessage = z.infer<typeof userUpdatedSchema>;
 
 //crud operations for user
@@ -111,7 +113,7 @@ export async function initiateEmailVerification(userId: string) {
         emailVerificationExpiresAt: expiresAt 
     });
 
-    //email service sends email
+    emailService.sendVerificationMail(user.pendingEmail ?? user.email, user.username, token);
     return token;
 }
 
@@ -136,7 +138,7 @@ export async function requestEmailChange(userId: string, newEmail: string) {
         pendingEmail: newEmail
     });
     
-    //email service sends email
+    emailService.sendVerificationMail(newEmail, user.username, token);
     return token;
 }
 
