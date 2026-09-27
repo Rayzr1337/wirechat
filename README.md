@@ -13,7 +13,7 @@ A real-time chat application supporting group rooms and private (1-to-1) messagi
 | Frontend       | Vite, React, TailwindCSS            |
 | Reverse Proxy  | Nginx                                |
 | Orchestration  | Docker Compose                       |
-| Email          | Brevo (prod), Mailhog (dev)          |
+| Email          | nodemailer          |
 
 ## Architecture
 
