@@ -1,13 +1,10 @@
 import { isUser } from '../middleware/auth.middleware';
 import * as roomController from '../controllers/rooms.controller';
-import * as messagesController from '../controllers/messages.controller';
 import { asyncErrorHandler } from '../middleware/error.middleware';
 import { Router } from "express";
 
 import { validate } from '../middleware/validation.middleware';
 import * as roomSchema from '../schemas/room.schema';
-import { getMessagesQuerySchema } from '../schemas/messageQuery.schema';
-
 
 export const roomsRouter = Router();
 
@@ -58,12 +55,5 @@ roomsRouter.post(
   isUser,
   validate(roomSchema.kickMemberBodySchema),
   asyncErrorHandler(roomController.kickMember)
-);
-
-roomsRouter.get(
-  "/:roomId/messages",
-  isUser,
-  validate(getMessagesQuerySchema),
-  asyncErrorHandler(messagesController.getMessages)
 );
 

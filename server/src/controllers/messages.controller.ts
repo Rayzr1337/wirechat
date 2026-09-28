@@ -7,7 +7,7 @@ export async function getMessages(
   res: Response
 ) {
   const roomId = req.params.roomId;
-  const { limit, cursor } = req.query;
+  const { limit, cursor } = req.parseQuery as GetMessagesQuery;
   const messages = await messagesService.getMessages(roomId, { limit, cursor });
   res.json(messages);
 }
