@@ -16,6 +16,8 @@ import { handleTypingIndicator } from "./handlers/typing.handler";
 
 import { broadcastPresenceUpdate } from "./presence";
 
+import { isRateLimtied } from "./rateLimiter";
+
 const PRESENCE_ZSET = "presence:heartbeats";
 
 export interface AuthenticatedSocket extends WebSocket {
@@ -125,6 +127,11 @@ wss.on("connection", async (ws: AuthenticatedSocket) => {
           break;
         }
         case "MESSAGE": {
+          const rateLimited = await isRateLimtied(userId);
+          if (rateLimited) {
+            sendError(ws, "RATE_LIMITED", "You are sending messages too quickly. Please wait a moment before sending more messages.");
+            return;
+          }
           await handleMessage(userId, ws, incomingMessage);
           break;
         }
