@@ -93,6 +93,7 @@ export const messageDeletedSchema = z.object({
 
 export const errorCodeList = [
   "INVALID_MESSAGE",
+  "RATE_LIMITED",
   "ROOM_NOT_FOUND",
   "USER_NOT_FOUND",
   "MESSAGE_NOT_FOUND",
