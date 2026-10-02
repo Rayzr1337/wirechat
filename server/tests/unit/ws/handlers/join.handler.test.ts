@@ -150,7 +150,7 @@ describe('handleJoinRoom', () => {
       .rejects.toThrow(AppError);
   });
 
-  it('throws AppError when joinRoom throws ALREADY_MEMBER', async () => {
+  it('ignores ALREADY_MEMBER when the socket is not yet tracked locally', async () => {
     (joinRoom as any).mockRejectedValue(new AppError(400, 'ALREADY_MEMBER', 'Already a member'));
 
     const socket = {
@@ -168,8 +168,8 @@ describe('handleJoinRoom', () => {
       payload: { roomId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' },
     };
 
-    await expect(handleJoinRoom('user-1', socket, incomingMessage))
-      .rejects.toThrow(AppError);
+    await expect(handleJoinRoom('user-1', socket, incomingMessage)).resolves.toBeUndefined();
+    expect(socket.rooms?.has('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb')).toBe(true);
   });
 
   it('throws AppError when joinRoom throws USER_NOT_FOUND', async () => {

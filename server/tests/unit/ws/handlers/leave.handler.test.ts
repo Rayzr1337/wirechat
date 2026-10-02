@@ -89,7 +89,7 @@ describe('handleLeaveRoom', () => {
 
     const socket = {
       userId: 'user-1',
-      rooms: new Set<string>(),
+      rooms: new Set(['ffffffff-ffff-4fff-8fff-ffffffffffff']),
       readyState: 1,
       send: vi.fn(),
       ping: vi.fn(),
@@ -106,7 +106,7 @@ describe('handleLeaveRoom', () => {
       .rejects.toThrow(AppError);
   });
 
-  it('throws AppError when leaveRoom throws NOT_IN_ROOM', async () => {
+  it('ignores NOT_IN_ROOM when the socket is already locally detached', async () => {
     (leaveRoom as any).mockRejectedValue(new AppError(400, 'NOT_IN_ROOM', 'Not in room'));
 
     const socket = {
@@ -124,8 +124,8 @@ describe('handleLeaveRoom', () => {
       payload: { roomId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' },
     };
 
-    await expect(handleLeaveRoom('user-1', socket, incomingMessage))
-      .rejects.toThrow(AppError);
+    await expect(handleLeaveRoom('user-1', socket, incomingMessage)).resolves.toBeUndefined();
+    expect(socket.rooms?.has('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb')).toBe(false);
   });
 
   it('throws AppError when leaveRoom throws CANNOT_LEAVE_DIRECT_ROOM', async () => {
