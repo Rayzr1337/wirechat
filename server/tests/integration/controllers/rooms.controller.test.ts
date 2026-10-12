@@ -3,6 +3,7 @@ import { createApp } from '@/app';
 import request from 'supertest';
 import { mockPrisma } from '@/../tests/mocks/prisma-client';
 import { mockNodemailer } from '@/../tests/mocks/nodemailer';
+import { mockRedisStore, mockRedisZSets } from '@/../tests/mocks/redis';
 import { clearTestCounters } from '@/../tests/utils/factories';
 import {
   registerUser,
@@ -201,6 +202,88 @@ describe('Rooms Controller Integration', () => {
 
       const res = await getAuthAgent(app, user.cookie).get('/api/rooms/ffffffff-ffff-ffff-ffff-ffffffffffff/members').expect(404);
       assertErrorResponse(res, 'ROOM_NOT_FOUND', 404);
+    });
+  });
+
+  describe('GET /api/rooms/:id/presences', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      clearTestCounters();
+      clearEmailMock();
+      mockPrisma.$transaction.mockImplementation(async (fn) => fn(mockPrisma));
+      mockRedisStore.clear();
+      mockRedisZSets.clear();
+    });
+
+    const member1 = {
+      id: MEMBER_1_ID,
+      roomId: ROOM_1_ID,
+      userId: USER_1_ID,
+      role: 'OWNER',
+      joinedAt: new Date(),
+      user: { id: USER_1_ID, username: 'user1', email: 'user1@test.com', avatarUrl: 'https://avatar1.com' },
+      room: groupRoom,
+    };
+    const member2 = {
+      id: MEMBER_2_ID,
+      roomId: ROOM_1_ID,
+      userId: USER_2_ID,
+      role: 'MEMBER',
+      joinedAt: new Date(),
+      user: { id: USER_2_ID, username: 'user2', email: 'user2@test.com', avatarUrl: null },
+      room: groupRoom,
+    };
+
+    it('returns presences for all room members with online status', async () => {
+      ({ user } = await setupUsers());
+      mockPrisma.room.findUnique.mockResolvedValue(groupRoom);
+      mockPrisma.roomMember.findMany.mockResolvedValue([member1, member2]);
+
+      // User1 is online (count > 0), User2 is offline (no key)
+      mockRedisStore.set('presence:count:' + USER_1_ID, '2');
+      mockRedisZSets.set('presence:heartbeats', new Map([[USER_1_ID, Date.now() - 10000]]));
+
+      const res = await getAuthAgent(app, user.cookie).get(`/api/rooms/${ROOM_1_ID}/presences`).expect(200);
+
+      expect(res.body).toHaveLength(2);
+      expect(res.body[0]).toMatchObject({
+        userId: USER_1_ID,
+        username: 'user1',
+        avatarUrl: 'https://avatar1.com',
+        role: 'OWNER',
+        isOnline: true,
+      });
+      expect(res.body[0].lastSeen).toBeDefined();
+      expect(res.body[1]).toMatchObject({
+        userId: USER_2_ID,
+        username: 'user2',
+        avatarUrl: null,
+        role: 'MEMBER',
+        isOnline: false,
+      });
+      expect(res.body[1].lastSeen).toBeNull();
+    });
+
+    it('returns 404 ROOM_NOT_FOUND for non-existent room', async () => {
+      ({ user } = await setupUsers());
+      mockPrisma.room.findUnique.mockResolvedValue(null);
+
+      const res = await getAuthAgent(app, user.cookie).get('/api/rooms/ffffffff-ffff-ffff-ffff-ffffffffffff/presences').expect(404);
+      assertErrorResponse(res, 'ROOM_NOT_FOUND', 404);
+    });
+
+    it('returns 403 NOT_IN_ROOM if user is not a member', async () => {
+      ({ user } = await setupUsers());
+      mockPrisma.room.findUnique.mockResolvedValue(groupRoom);
+      mockPrisma.roomMember.findUnique.mockResolvedValue(null); // Not a member
+
+      const res = await getAuthAgent(app, user.cookie).get(`/api/rooms/${ROOM_1_ID}/presences`).expect(403);
+      assertErrorResponse(res, 'NOT_IN_ROOM', 403);
+    });
+
+    it('returns 401 UNAUTHORIZED without auth cookie', async () => {
+      const res = await request(app).get(`/api/rooms/${ROOM_1_ID}/presences`).expect(401);
+      assertErrorResponse(res, 'UNAUTHORIZED', 401);
     });
   });
 

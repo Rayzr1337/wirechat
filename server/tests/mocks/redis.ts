@@ -58,6 +58,16 @@ const createMockClient = () => ({
       .filter(([, score]) => score >= min && score <= max)
       .map(([value]) => value);
   }),
+  mGet: vi.fn(async (...keys: string[]) => {
+    // Handle both mGet(key1, key2) and mGet([key1, key2])
+    const keyArray = keys.length === 1 && Array.isArray(keys[0]) ? keys[0] : keys;
+    return keyArray.map(k => store.get(k) ?? null);
+  }),
+  zmScore: vi.fn(async (key: string, values: string[]) => {
+    const zs = zsets.get(key);
+    if (!zs) return values.map(() => null);
+    return values.map(v => zs.get(v) ?? null);
+  }),
   getDel: vi.fn(async (key: string) => {
     const val = store.get(key) ?? null;
     store.delete(key);

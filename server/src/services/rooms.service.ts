@@ -2,6 +2,7 @@ import { roomRepository, type client } from '../repositories/room.repository';
 import { userRepository } from '../repositories/user.repository';
 import { AppError } from "../middleware/error.middleware";
 import { prisma } from '../libs/prisma';
+import { redisClient } from '../libs/redis';
 import { RoomMember } from '../generated/prisma/client';
 
 export async function getUserRooms(userId: string) {
@@ -21,6 +22,35 @@ export async function getRoomMembers(roomId: string) {
     }
     
     return roomRepository.getRoomMembers(roomId);
+}
+
+export async function getRoomPresences(roomId: string, requestingUserId: string) {
+    const room = await roomRepository.getRoomById(roomId);
+    if (!room) {
+        throw new AppError(404, "ROOM_NOT_FOUND", "Room not found!");
+    }
+
+    const isMember = await roomRepository.isMemberOfRoom(roomId, requestingUserId);
+    if (!isMember) {
+        throw new AppError(403, "NOT_IN_ROOM", "User is not a member of this room.");
+    }
+
+    const members = await roomRepository.getRoomMembers(roomId);
+    const userIds = members.map(m => m.userId);
+
+    const countKeys = userIds.map(id => `presence:count:${id}`);
+    const counts = await redisClient.mGet(countKeys);
+
+    const heartbeats = await redisClient.zmScore('presence:heartbeats', userIds);
+
+    return members.map((member, i) => ({
+        userId: member.userId,
+        username: member.user.username,
+        avatarUrl: member.user.avatarUrl,
+        role: member.role,
+        isOnline: counts[i] !== null && parseInt(counts[i]) > 0,
+        lastSeen: heartbeats[i] ? new Date(heartbeats[i]).toISOString() : null,
+    }));
 }
 
 export async function getRoomById(roomId: string) {

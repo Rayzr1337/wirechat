@@ -1,6 +1,7 @@
 import { vi } from 'vitest';
 import { mockPrisma } from './mocks/prisma-client';
 import { mockNodemailer } from './mocks/nodemailer';
+import { mockRedisStore, mockRedisZSets, redisClient } from './mocks/redis';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -8,6 +9,20 @@ beforeEach(() => {
   if (mockNodemailer && typeof mockNodemailer.clear === 'function') {
     mockNodemailer.clear();
   }
+  
+  mockRedisStore.clear();
+  mockRedisZSets.clear();
+  
+  // Reset Redis mock functions
+  redisClient.mGet.mockClear();
+  redisClient.zmScore.mockClear();
+  redisClient.incr.mockClear();
+  redisClient.decr.mockClear();
+  redisClient.zAdd.mockClear();
+  redisClient.zRem.mockClear();
+  redisClient.get.mockClear();
+  redisClient.set.mockClear();
+  redisClient.del.mockClear();
   
   mockPrisma.user.create.mockReset();
   mockPrisma.user.findUnique.mockReset();
