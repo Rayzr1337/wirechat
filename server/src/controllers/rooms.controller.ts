@@ -21,6 +21,13 @@ export async function getRoomMembers(req: Request<{ roomId: string }>, res: Resp
     res.json(members);
 }
 
+export async function getRoomPresences(req: Request<{ roomId: string }>, res: Response) {
+    const roomId = req.params.roomId;
+    const userId = req.user!.userId;
+    const presences = await roomsService.getRoomPresences(roomId, userId);
+    res.json(presences);
+}
+
 export async function getRoomById(req: Request<{ roomId: string }>, res: Response) {
     const roomId = req.params.roomId;
     const room = await roomsService.getRoomById(roomId);

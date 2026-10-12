@@ -36,6 +36,9 @@ export default defineConfig({
       '../generated/prisma/client': resolve(__dirname, 'tests/mocks/prisma-client.ts'),
       '@prisma/client': resolve(__dirname, 'tests/mocks/prisma-client.ts'),
       'redis': resolve(__dirname, 'tests/mocks/redis.ts'),
+      '@prisma/client': resolve(__dirname, 'tests/mocks/prisma-client.ts'),
+      '@/libs/redis': resolve(__dirname, 'tests/mocks/redis.ts'),
+      '../libs/redis': resolve(__dirname, 'tests/mocks/redis.ts'),
       'nodemailer': resolve(__dirname, 'tests/mocks/nodemailer.ts'),
     },
     resolve: {
@@ -46,6 +49,8 @@ export default defineConfig({
         '../generated/prisma/client': resolve(__dirname, 'tests/mocks/prisma-client.ts'),
         '@prisma/client': resolve(__dirname, 'tests/mocks/prisma-client.ts'),
         'redis': resolve(__dirname, 'tests/mocks/redis.ts'),
+        '@/libs/redis': resolve(__dirname, 'tests/mocks/redis.ts'),
+        '../libs/redis': resolve(__dirname, 'tests/mocks/redis.ts'),
         'nodemailer': resolve(__dirname, 'tests/mocks/nodemailer.ts'),
       },
     },

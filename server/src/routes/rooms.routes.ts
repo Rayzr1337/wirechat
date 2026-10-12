@@ -12,6 +12,7 @@ export const roomsRouter = Router();
 roomsRouter.get("/me", isUser, asyncErrorHandler(roomController.getUserRooms));
 roomsRouter.get("/:roomId", isUser, asyncErrorHandler(roomController.getRoomById));
 roomsRouter.get("/:roomId/members", isUser, asyncErrorHandler(roomController.getRoomMembers));
+roomsRouter.get("/:roomId/presences", isUser, asyncErrorHandler(roomController.getRoomPresences));
 
 
 roomsRouter.post(
