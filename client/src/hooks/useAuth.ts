@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { login, logout } from '../api/auth';
-// import { resetClientState } from '../lib/resetClientState()'
+import { resetClientState } from '../lib/resetClientState'
 
 export function useLogin() {
     const qc = useQueryClient();
@@ -13,7 +13,7 @@ export function useLogin() {
 export function useLogout() {
     return useMutation({
         mutationFn: logout,
-//      onSettled: () => resetClientState
+        onSettled: () => resetClientState(),
     });
 }
 

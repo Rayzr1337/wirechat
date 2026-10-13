@@ -1,4 +1,4 @@
-import { ErrorCode } from '../ws/protocol/schemas';
+import { type ErrorCode } from '../ws/protocol/schemas';
 
 export class ApiError extends Error {
   constructor(
