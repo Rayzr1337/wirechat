@@ -4,11 +4,19 @@ import { asyncErrorHandler } from '../middleware/error.middleware';
 import { Router } from "express";
 
 import { validate } from '../middleware/validation.middleware';
+import { validateQuery } from '../middleware/validation.middleware';
 import * as userSchema from '../schemas/user.schema';
 
 export const usersRouter = Router();
 
 usersRouter.get("/me", isUser, asyncErrorHandler(usersController.getMe));
+
+usersRouter.get(
+  "/search",
+  isUser,
+  validateQuery(userSchema.searchUsersQuerySchema),
+  asyncErrorHandler(usersController.searchUsers)
+);
 
 usersRouter.patch(
   "/me",

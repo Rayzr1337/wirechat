@@ -4,6 +4,7 @@ import type {
     UpdateProfileBody,
     ChangePasswordBody,
     RequestEmailChangeBody,
+    SearchUsersQuery,
 } from '../schemas/user.schema';
 
 export async function getMe(req: Request, res: Response) {
@@ -16,6 +17,13 @@ export async function getMe(req: Request, res: Response) {
         emailVerified: user.emailVerified,
         pendingEmail: user.pendingEmail ?? undefined
     });
+}
+
+export async function searchUsers(req: Request<{}, {}, {}, SearchUsersQuery>, res: Response) {
+    const userId = req.user!.userId;
+    const { q } = req.parseQuery;
+    const users = await usersService.searchUsers(q, userId);
+    res.json(users);
 }
 
 export async function updateProfile(req: Request<{}, {}, UpdateProfileBody>, res: Response) {

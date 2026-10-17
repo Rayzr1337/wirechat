@@ -29,6 +29,29 @@ export class UserRepository {
     async deleteUser(id: string): Promise<User> {
         return prisma.user.delete({ where: { id } });
     }
+
+    async searchUsers(query: string, excludingUserId: string): Promise<User[]> {
+        return prisma.user.findMany({
+            where: {
+                AND: [
+                    { id: { not: excludingUserId } },
+                    {
+                        OR: [
+                            { username: { contains: query, mode: "insensitive" } },
+                            { email: { contains: query, mode: "insensitive" } },
+                        ],
+                    },
+                ],
+            },
+            select: {
+                id: true,
+                username: true,
+                email: true,
+                avatarUrl: true,
+            },
+            take: 20,
+        });
+    }
 }
 
 export const userRepository = new UserRepository();

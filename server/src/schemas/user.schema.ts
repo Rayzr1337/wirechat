@@ -46,6 +46,9 @@ export const verifyEmailQuerySchema = z.object({
   token: z.uuid("Invalid token format"),
 });
 
+export const searchUsersQuerySchema = z.object({
+  q: z.string().trim().min(1, "Search query is required").max(100, "Search query too long"),
+});
 
 export type RegisterBody = z.infer<typeof registerBodySchema>;
 export type LoginBody = z.infer<typeof loginBodySchema>;
@@ -53,3 +56,4 @@ export type UpdateProfileBody = z.infer<typeof updateProfileBodySchema>;
 export type ChangePasswordBody = z.infer<typeof changePasswordBodySchema>;
 export type RequestEmailChangeBody = z.infer<typeof requestEmailChangeBodySchema>;
 export type VerifyEmailQuery = z.infer<typeof verifyEmailQuerySchema>;
+export type SearchUsersQuery = z.infer<typeof searchUsersQuerySchema>;

@@ -93,6 +93,12 @@ export async function deleteUser(id: string) {
     return userRepository.deleteUser(id);
 }
 
+//user search
+
+export async function searchUsers(query: string, excludingUserId: string) {
+    return userRepository.searchUsers(query, excludingUserId);
+}
+
 //email verification
 
 export async function initiateEmailVerification(userId: string) {
