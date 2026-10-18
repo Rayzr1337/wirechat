@@ -46,7 +46,6 @@ export class UserRepository {
             select: {
                 id: true,
                 username: true,
-                email: true,
                 avatarUrl: true,
             },
             take: 20,
