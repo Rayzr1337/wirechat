@@ -53,6 +53,11 @@ export const userLeftSchema = z.object({
     payload: z.object({ roomId: z.uuid(), userId: z.uuid(), timestamp: z.iso.datetime() })
 });
 
+export const directRoomCreatedSchema = z.object({
+    type: z.literal("DIRECT_ROOM_CREATED"),
+    payload: z.object({ roomId: z.uuid(), withUserId: z.uuid(), timestamp: z.iso.datetime() })
+});
+
 export const outboundTypingIndicatorSchema = z.object({
     type: z.literal("TYPING"),
     payload: z.object({ roomId: z.uuid(), userId: z.uuid() })
@@ -149,6 +154,7 @@ export const outgoingMessageSchema = z.discriminatedUnion("type", [
     outboundMessageSchema,
     userJoinedSchema,
     userLeftSchema,
+    directRoomCreatedSchema,
     outboundTypingIndicatorSchema,
     presenceUpdateSchema,
     userUpdatedSchema,

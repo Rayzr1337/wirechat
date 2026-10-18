@@ -17,7 +17,8 @@ export async function getUserRooms(req: Request, res: Response) {
 
 export async function getRoomMembers(req: Request<{ roomId: string }>, res: Response) {
     const roomId = req.params.roomId;
-    const members = await roomsService.getRoomMembers(roomId);
+    const userId = req.user!.userId;
+    const members = await roomsService.getRoomMembers(roomId, userId);
     res.json(members);
 }
 
@@ -30,7 +31,8 @@ export async function getRoomPresences(req: Request<{ roomId: string }>, res: Re
 
 export async function getRoomById(req: Request<{ roomId: string }>, res: Response) {
     const roomId = req.params.roomId;
-    const room = await roomsService.getRoomById(roomId);
+    const userId = req.user!.userId;
+    const room = await roomsService.getRoomById(roomId, userId);
     res.json(room);
 }
 

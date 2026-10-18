@@ -3,6 +3,7 @@ import { userRepository } from '../repositories/user.repository';
 import { AppError } from "../middleware/error.middleware";
 import { prisma } from '../libs/prisma';
 import { redisClient } from '../libs/redis';
+import { broadcastToUser, broadcastSocketLeave } from '../ws/broadcast';
 import { RoomMember } from '../generated/prisma/client';
 
 export async function getUserRooms(userId: string) {
@@ -15,12 +16,17 @@ export async function getUserRooms(userId: string) {
     return memberships.map((m) => ({ ...m.room, myRole: m.role }));
 }
 
-export async function getRoomMembers(roomId: string) {
+export async function getRoomMembers(roomId: string, requestingUserId: string) {
     const room = await roomRepository.getRoomById(roomId);
     if (!room) {
         throw new AppError(404, "ROOM_NOT_FOUND", "Room not found!");
     }
-    
+
+    const isMember = await roomRepository.isMemberOfRoom(roomId, requestingUserId);
+    if (!isMember) {
+        throw new AppError(403, "NOT_IN_ROOM", "User is not a member of this room.");
+    }
+
     return roomRepository.getRoomMembers(roomId);
 }
 
@@ -53,11 +59,17 @@ export async function getRoomPresences(roomId: string, requestingUserId: string)
     }));
 }
 
-export async function getRoomById(roomId: string) {
+export async function getRoomById(roomId: string, requestingUserId: string) {
     const room = await roomRepository.getRoomById(roomId);
     if (!room) {
         throw new AppError(404, "ROOM_NOT_FOUND", "Room not found!");
     }
+
+    const isMember = await roomRepository.isMemberOfRoom(roomId, requestingUserId);
+    if (!isMember) {
+        throw new AppError(403, "NOT_IN_ROOM", "User is not a member of this room.");
+    }
+
     return room;
 }
 
@@ -95,6 +107,10 @@ export async function createDirectRoom(userId1: string, userId2: string) {
         const room = await roomRepository.createRoom({ type: "DIRECT", directKey: directKey }, tx);
         await roomRepository.addMemberToRoom(room.id, userId1, "MEMBER", tx);
         await roomRepository.addMemberToRoom(room.id, userId2, "MEMBER", tx);
+        await broadcastToUser(userId2, {
+            type: "DIRECT_ROOM_CREATED",
+            payload: { roomId: room.id, withUserId: userId1, timestamp: new Date().toISOString() },
+        });
         return room;
     });
 }
@@ -152,6 +168,7 @@ export async function leaveRoom(userId: string, roomId: string) {
 
         if (isLastMember) {
             await roomRepository.deleteRoom(roomId, tx);
+            await redisClient.publish(`room_deleted:${roomId}`, JSON.stringify({ roomId }));
             return { message: "Room deleted as it had no more members." };
         }
 
@@ -161,6 +178,7 @@ export async function leaveRoom(userId: string, roomId: string) {
         }
 
         await roomRepository.removeMemberFromRoom(roomId, userId, tx);
+        await broadcastSocketLeave(roomId, userId);
         return { message: "User has left the room." };
     });
 }
@@ -293,7 +311,9 @@ export async function kickMember(roomId: string, kickerId: string, memberId: str
         throw new AppError(403, "CANNOT_KICK_ADMIN", "Admins cannot kick other admins.");
     }
     
-    return roomRepository.removeMemberFromRoom(roomId, memberId);
+    return roomRepository.removeMemberFromRoom(roomId, memberId).then(async () => {
+        await broadcastSocketLeave(roomId, memberId);
+    });
 }
 
 //helpers:

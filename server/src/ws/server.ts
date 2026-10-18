@@ -5,7 +5,7 @@ import { redisClient } from "../libs/redis";
 import { Duplex } from "stream";
 import { AppError } from "../middleware/error.middleware";
 import type { IncomingMessage, ErrorCode } from "./protocol/schemas";
-import { removeSocketFromRoom } from "./roomRegistry";
+import { removeSocketFromRoom, addUserSocket, removeUserSocket } from "./roomRegistry";
 
 import { handleJoinRoom } from "./handlers/join.handler";
 import { handleLeaveRoom } from "./handlers/leave.handler";
@@ -90,6 +90,7 @@ wss.on("connection", async (ws: AuthenticatedSocket) => {
   console.log("New WebSocket connection established");
   ws.rooms = new Set<string>();
   ws.missedPings = 0;
+  addUserSocket(ws.user!.id, ws);
 
   const count = await redisClient.incr(`presence:count:${ws.user!.id}`);
   await redisClient.zAdd(PRESENCE_ZSET, { score: Date.now(), value: ws.user!.id });
@@ -176,6 +177,7 @@ wss.on("connection", async (ws: AuthenticatedSocket) => {
     }
 
     if (ws.user) {
+      removeUserSocket(ws.user.id, ws);
       const count = await redisClient.decr(`presence:count:${ws.user.id}`);
       if (count <= 0) {
         await redisClient.del(`presence:count:${ws.user.id}`);
