@@ -38,3 +38,5 @@ usersRouter.post(
   validate(userSchema.requestEmailChangeBodySchema),
   asyncErrorHandler(usersController.requestEmailChange)
 );
+
+usersRouter.delete("/me", isUser, asyncErrorHandler(usersController.deleteMe));

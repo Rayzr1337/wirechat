@@ -34,9 +34,14 @@ export const kickMemberBodySchema = z.object({
   memberId: userIdSchema,
 });
 
+export const updateRoomBodySchema = z.object({
+  name: roomNameSchema,
+});
+
 export type CreateRoomBody = z.infer<typeof createRoomBodySchema>;
 export type CreateDirectMessageRoomBody = z.infer<typeof createDirectMessageRoomBodySchema>;
 export type TransferOwnershipBody = z.infer<typeof transferOwnershipBodySchema>;
 export type PromoteMemberBody = z.infer<typeof promoteMemberBodySchema>;
 export type DemoteMemberBody = z.infer<typeof demoteMemberBodySchema>;
 export type KickMemberBody = z.infer<typeof kickMemberBodySchema>;
+export type UpdateRoomBody = z.infer<typeof updateRoomBodySchema>;
