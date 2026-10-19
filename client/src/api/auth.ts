@@ -35,3 +35,24 @@ export function verifyEmail(token: string) {
         `/api/auth/verify-email?token=${encodeURIComponent(token)}`,
     );
 }
+
+export function updateProfile(data: { username?: string; avatarUrl?: string }) {
+    return request<{ id: string; username: string; avatarUrl: string | null }>('/api/users/me', {
+        method: 'PATCH',
+        body: data,
+    });
+}
+
+export function changePassword(data: { oldPassword: string; newPassword: string }) {
+    return request<{ message: string }>('/api/users/me/password', {
+        method: 'PATCH',
+        body: data,
+    });
+}
+
+export function requestEmailChange(data: { newEmail: string }) {
+    return request<{ message: string }>('/api/users/me/change-email', {
+        method: 'POST',
+        body: data,
+    });
+}
