@@ -46,3 +46,14 @@ export async function requestEmailChange(req: Request<{}, {}, RequestEmailChange
     res.json({ message: 'Verification email sent to new address.' });
 }
 
+export async function deleteMe(req: Request, res: Response) {
+    const userId = req.user!.userId;
+    await usersService.deleteUser(userId);
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+    });
+    res.json({ message: 'Account deleted successfully.' });
+}
+

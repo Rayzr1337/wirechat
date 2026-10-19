@@ -316,6 +316,26 @@ export async function kickMember(roomId: string, kickerId: string, memberId: str
     });
 }
 
+export async function updateRoomName(roomId: string, requestingUserId: string, name: string) {
+    const room = await roomRepository.getRoomById(roomId);
+    if (!room) {
+        throw new AppError(404, "ROOM_NOT_FOUND", "Room not found!");
+    }
+
+    const isMember = await roomRepository.isMemberOfRoom(roomId, requestingUserId);
+    if (!isMember) {
+        throw new AppError(403, "NOT_IN_ROOM", "User is not a member of this room.");
+    }
+
+    const members = await roomRepository.getRoomMembers(roomId);
+    const member = members.find((m) => m.userId === requestingUserId);
+    if (member?.role !== "OWNER" && member?.role !== "ADMIN") {
+        throw new AppError(403, "ADMIN_OR_OWNER_REQUIRED", "Only the owner or an admin can update the room name.");
+    }
+
+    return roomRepository.updateRoom(roomId, { name });
+}
+
 //helpers:
 
 async function transferOwnershipLeave(roomId: string, excludingUserId: string, members: RoomMember[], tx: client): Promise<void> {

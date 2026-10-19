@@ -7,6 +7,7 @@ import type {
   PromoteMemberBody,
   DemoteMemberBody,
   KickMemberBody,
+  UpdateRoomBody,
 } from '../schemas/room.schema';
 
 export async function getUserRooms(req: Request, res: Response) {
@@ -94,4 +95,12 @@ export async function kickMember(req: Request<{ roomId: string }, {}, KickMember
     const { memberId } = req.body;
     await roomsService.kickMember(roomId, kickerId, memberId);
     res.status(200).json({ message: 'Member kicked successfully' });
+}
+
+export async function updateRoomName(req: Request<{ roomId: string }, {}, UpdateRoomBody>, res: Response) {
+    const roomId = req.params.roomId;
+    const userId = req.user!.userId;
+    const { name } = req.body;
+    await roomsService.updateRoomName(roomId, userId, name);
+    res.status(200).json({ message: 'Room name updated successfully.' });
 }

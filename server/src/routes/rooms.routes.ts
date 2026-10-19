@@ -58,3 +58,10 @@ roomsRouter.post(
   asyncErrorHandler(roomController.kickMember)
 );
 
+roomsRouter.patch(
+  "/:roomId",
+  isUser,
+  validate(roomSchema.updateRoomBodySchema),
+  asyncErrorHandler(roomController.updateRoomName)
+);
+
