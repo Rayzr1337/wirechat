@@ -32,12 +32,15 @@ function saveUnreads(unreadCounts: Record<string, number>) {
 
 export interface UnreadStore {
   unreadCounts: Record<string, number>
+  lastSeenVersion: Record<string, number>
   incrementUnread: (roomId: string) => void
   clearUnread: (roomId: string) => void
+  setLastSeenVersion: (roomId: string, version: number) => void
 }
 
 export const useUnreadStore = create<UnreadStore>((set) => ({
   unreadCounts: loadUnreads(),
+  lastSeenVersion: {},
 
   incrementUnread: (roomId) => {
     set((state) => {
@@ -57,5 +60,14 @@ export const useUnreadStore = create<UnreadStore>((set) => ({
       saveUnreads(next)
       return { unreadCounts: next }
     })
+  },
+
+  setLastSeenVersion: (roomId, version) => {
+    set((state) => ({
+      lastSeenVersion: {
+        ...state.lastSeenVersion,
+        [roomId]: version,
+      },
+    }))
   },
 }))
