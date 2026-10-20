@@ -36,6 +36,10 @@ export function verifyEmail(token: string) {
     );
 }
 
+export function fetchWsTicket() {
+    return request<{ ticket: string }>('/api/auth/ws-ticket');
+}
+
 export function updateProfile(data: { username?: string; avatarUrl?: string }) {
     return request<{ id: string; username: string; avatarUrl: string | null }>('/api/users/me', {
         method: 'PATCH',

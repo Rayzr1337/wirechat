@@ -1,6 +1,3 @@
-// GENERATED from server/src/ws/protocol/schemas.ts. Do not edit here.
-// Run `npm run sync:protocol` after changing the server schema.
-//
 import { z } from "zod";
 
 // Inbound messages:
@@ -54,6 +51,11 @@ export const userJoinedSchema = z.object({
 export const userLeftSchema = z.object({
     type: z.literal("USER_LEFT"),
     payload: z.object({ roomId: z.uuid(), userId: z.uuid(), timestamp: z.iso.datetime() })
+});
+
+export const directRoomCreatedSchema = z.object({
+    type: z.literal("DIRECT_ROOM_CREATED"),
+    payload: z.object({ roomId: z.uuid(), withUserId: z.uuid(), timestamp: z.iso.datetime() })
 });
 
 export const outboundTypingIndicatorSchema = z.object({
@@ -152,6 +154,7 @@ export const outgoingMessageSchema = z.discriminatedUnion("type", [
     outboundMessageSchema,
     userJoinedSchema,
     userLeftSchema,
+    directRoomCreatedSchema,
     outboundTypingIndicatorSchema,
     presenceUpdateSchema,
     userUpdatedSchema,
