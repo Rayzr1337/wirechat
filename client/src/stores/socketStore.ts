@@ -4,7 +4,7 @@ export interface SocketStore {
   socket: WebSocket | null
   connected: boolean
   joinedRooms: Set<string>
-  connect: (url: string) => void
+  connect: (url: string, onClose?: () => void) => void
   disconnect: () => void
   send: (type: string, payload: Record<string, unknown>) => void
   addJoinedRoom: (roomId: string) => void
@@ -16,15 +16,19 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
   connected: false,
   joinedRooms: new Set(),
 
-  connect: (url) => {
+  connect: (url, onClose) => {
     const socket = new WebSocket(url)
+    set({ socket })
 
     socket.onopen = () => {
-      set({ connected: true, socket })
+      set({ connected: true })
     }
 
     socket.onclose = () => {
-      set({ connected: false, socket: null })
+      if (get().socket === socket) {
+          set({ connected: false, socket: null })
+      }
+      onClose?.()
     }
 
     socket.onerror = () => {
