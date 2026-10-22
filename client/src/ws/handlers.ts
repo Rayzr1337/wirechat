@@ -55,6 +55,7 @@ export function handleInbound(data: OutgoingMessage) {
 
     case 'USER_UPDATED': {
       queryClient.invalidateQueries({ queryKey: ['me'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
       break;
     }
 
@@ -72,9 +73,16 @@ export function handleInbound(data: OutgoingMessage) {
       break;
     }
 
+    case 'ROOM_DELETED': {
+      const { roomId } = data.payload;
+      queryClient.removeQueries({ queryKey: ['messages', roomId] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      break;
+    }
+
     case 'ERROR': {
-      const { code, message } = data.payload;
-      uiStore.addToast(`${code}: ${message}`, 'error');
+      const { message } = data.payload;
+      uiStore.addToast(message, 'error');
       break;
     }
   }

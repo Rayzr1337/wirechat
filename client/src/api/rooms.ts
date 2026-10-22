@@ -60,6 +60,10 @@ export function getRoomById(roomId: string) {
   return request<Room>(`/api/rooms/${roomId}`);
 }
 
+export function deleteRoom(roomId: string) {
+  return request<{ message: string }>(`/api/rooms/${roomId}`, { method: 'DELETE' });
+}
+
 export function transferOwnership(roomId: string, newOwnerId: string) {
   return request<{ message: string }>(`/api/rooms/${roomId}/transfer-ownership`, {
     method: 'POST',

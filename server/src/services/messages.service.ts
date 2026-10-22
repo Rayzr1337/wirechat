@@ -1,8 +1,18 @@
 import { messageRepository } from "../repositories/message.repository";
 import { roomRepository } from "../repositories/room.repository";
+import { userRepository } from "../repositories/user.repository";
 import { AppError } from "../middleware/error.middleware";
 
 export async function sendMessage(senderId: string, roomId: string, content: string) {
+    const sender = await userRepository.getUserById(senderId);
+    if (!sender) {
+        throw new AppError(404, "USER_NOT_FOUND", "Sender not found!");
+    }
+
+    if (!sender.emailVerified) {
+        throw new AppError(403, "EMAIL_NOT_VERIFIED", "Email not verified.");
+    }
+
     const room = await roomRepository.getRoomById(roomId);
     if (!room) {
         throw new AppError(404, "ROOM_NOT_FOUND", "Room not found!");

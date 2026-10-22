@@ -7,6 +7,7 @@ export interface Message {
   content: string;
   createdAt: string;
   editedAt: string | null;
+  sender?: { username: string; avatarUrl: string | null } | null;
 }
 
 export function getMessages(roomId: string, options: { limit?: number; cursor?: string } = {}) {

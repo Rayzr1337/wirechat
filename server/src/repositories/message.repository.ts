@@ -49,7 +49,7 @@ class MessageRepository {
             limit?: number;
             cursor?: string;
         } = {}
-    ): Promise<Message[]> {
+    ): Promise<(Message & { sender: { username: string; avatarUrl: string | null } | null })[]> {
         const { limit = 50, cursor } = options;
 
         return prisma.message.findMany({
@@ -57,6 +57,7 @@ class MessageRepository {
             take: limit,
             ...(cursor && { cursor: { id: cursor }, skip: 1 }),
             orderBy: { createdAt: "desc" },
+            include: { sender: { select: { username: true, avatarUrl: true } } },
         });
     }
 }

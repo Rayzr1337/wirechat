@@ -79,6 +79,10 @@ export async function createGroupRoom(creatorId: string, roomName: string) {
         throw new AppError(404, "USER_NOT_FOUND", "Creator not found!");
     }
 
+    if (!creator.emailVerified) {
+        throw new AppError(403, "EMAIL_NOT_VERIFIED", "Email not verified.");
+    }
+
     const room = await roomRepository.createRoom({ name: roomName, type: "GROUP" });
     await roomRepository.addMemberToRoom(room.id, creatorId, "OWNER");
     return room;
@@ -91,9 +95,13 @@ export async function createDirectRoom(userId1: string, userId2: string) {
 
     const user1 = await userRepository.getUserById(userId1);
     const user2 = await userRepository.getUserById(userId2);
-    
+
     if (!user1 || !user2) {
         throw new AppError(404, "USER_NOT_FOUND", "One or both users not found!");
+    }
+
+    if (!user1.emailVerified || !user2.emailVerified) {
+        throw new AppError(403, "EMAIL_NOT_VERIFIED", "Email not verified.");
     }
 
     const directKey = [userId1, userId2].sort().join('_');
@@ -314,6 +322,33 @@ export async function kickMember(roomId: string, kickerId: string, memberId: str
     return roomRepository.removeMemberFromRoom(roomId, memberId).then(async () => {
         await broadcastSocketLeave(roomId, memberId);
     });
+}
+
+export async function destroyRoom(roomId: string, requesterId: string) {
+    const room = await roomRepository.getRoomById(roomId);
+    if (!room) {
+        throw new AppError(404, "ROOM_NOT_FOUND", "Room not found!");
+    }
+
+    if (room.type !== "GROUP") {
+        throw new AppError(400, "CANNOT_DELETE_DIRECT_ROOM", "Direct rooms cannot be deleted.");
+    }
+
+    const members = await roomRepository.getRoomMembers(roomId);
+    const requester = members.find((m) => m.userId === requesterId);
+
+    if (requester?.role !== "OWNER") {
+        throw new AppError(403, "OWNER_REQUIRED", "Only the owner can delete the room.");
+    }
+
+    for (const member of members) {
+        await broadcastToUser(member.userId, {
+            type: "ROOM_DELETED",
+            payload: { roomId },
+        });
+    }
+
+    return roomRepository.deleteRoom(roomId);
 }
 
 export async function updateRoomName(roomId: string, requestingUserId: string, name: string) {

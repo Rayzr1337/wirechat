@@ -104,3 +104,10 @@ export async function updateRoomName(req: Request<{ roomId: string }, {}, Update
     await roomsService.updateRoomName(roomId, userId, name);
     res.status(200).json({ message: 'Room name updated successfully.' });
 }
+
+export async function deleteRoom(req: Request<{ roomId: string }>, res: Response) {
+    const roomId = req.params.roomId;
+    const userId = req.user!.userId;
+    await roomsService.destroyRoom(roomId, userId);
+    res.status(200).json({ message: 'Room deleted successfully.' });
+}

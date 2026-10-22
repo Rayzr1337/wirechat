@@ -5,6 +5,7 @@ import {
   createDirectRoom,
   joinRoom,
   leaveRoom,
+  deleteRoom as deleteRoomApi,
   transferOwnership,
   promoteMember,
   demoteMember,
@@ -129,6 +130,16 @@ export function useKickMember() {
       qc.invalidateQueries({
         queryKey: ['rooms', variables.roomId, 'members'],
       });
+    },
+  });
+}
+
+export function useDeleteRoom() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteRoomApi,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['rooms'] });
     },
   });
 }

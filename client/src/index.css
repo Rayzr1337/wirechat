@@ -18,6 +18,17 @@
   --font-display: "Sora", sans-serif;
 }
 
+@keyframes bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
 @layer base {
   body {
     background-color: var(--color-surface-0);

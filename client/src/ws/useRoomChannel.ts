@@ -65,8 +65,9 @@ export function useRoomChannel(roomId: string | null) {
   }, []);
 
   const leaveRoom = useCallback(() => {
+    if (!roomId) return;
     send('LEAVE_ROOM', { roomId });
-    removeJoinedRoom(roomId!);
+    removeJoinedRoom(roomId);
     const { activeRoomId } = useUiStore.getState();
     if (activeRoomId === roomId) {
       setActiveRoomId(null);

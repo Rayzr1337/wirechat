@@ -53,6 +53,11 @@ export const userLeftSchema = z.object({
     payload: z.object({ roomId: z.uuid(), userId: z.uuid(), timestamp: z.iso.datetime() })
 });
 
+export const roomDeletedSchema = z.object({
+    type: z.literal("ROOM_DELETED"),
+    payload: z.object({ roomId: z.uuid() })
+});
+
 export const directRoomCreatedSchema = z.object({
     type: z.literal("DIRECT_ROOM_CREATED"),
     payload: z.object({ roomId: z.uuid(), withUserId: z.uuid(), timestamp: z.iso.datetime() })
@@ -105,6 +110,7 @@ export const errorCodeList = [
   "UNAUTHORIZED",
   "NOT_IN_ROOM",
   "EMAIL_NOT_VERIFIED",
+  "CANNOT_DELETE_DIRECT_ROOM",
   "CONFLICT",
   "INVALID_TOKEN",
   "ALREADY_ADMIN",
@@ -154,6 +160,7 @@ export const outgoingMessageSchema = z.discriminatedUnion("type", [
     outboundMessageSchema,
     userJoinedSchema,
     userLeftSchema,
+    roomDeletedSchema,
     directRoomCreatedSchema,
     outboundTypingIndicatorSchema,
     presenceUpdateSchema,
