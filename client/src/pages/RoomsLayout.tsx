@@ -51,6 +51,12 @@ export function RoomsLayout() {
 
   if (!me) return null;
 
+  const dmPeerById: Record<string, { userId: string; username: string; avatarUrl: string | null } | undefined> = {};
+  for (const room of rooms) {
+    if (room.type !== 'DIRECT') continue;
+    dmPeerById[room.id] = room.members?.find((m) => m.userId !== me.id);
+  }
+
   const openRoom = (roomId: string) => {
     addJoinedRoom(roomId);
     navigate(`/rooms/${roomId}`);
@@ -117,6 +123,7 @@ export function RoomsLayout() {
                 <RoomListItem
                   key={room.id}
                   room={{ ...room, name: room.name ?? 'Direct Message' }}
+                  peer={dmPeerById[room.id]}
                   onClick={() => openRoom(room.id)}
                   active={room.id === activeRoomId}
                   index={0}
@@ -139,24 +146,27 @@ export function RoomsLayout() {
               ))}
             </div>
           </div>
+        </div>
 
-          <div className="px-2 pt-2 space-y-1">
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer bg-surface-2 hover:bg-surface-3"
-                 onClick={() => setCreateRoomOpen(true)}>
-              <PlusIcon size={17} color="#7c6ff0" />
-              <span className="text-sm text-ink">Create group</span>
-            </div>
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer bg-surface-2 hover:bg-surface-3"
-                 onClick={() => setCreateDmOpen(true)}>
-              <PlusIcon size={17} color="#7c6ff0" />
-              <span className="text-sm text-ink">Create direct message</span>
-            </div>
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer bg-surface-2 hover:bg-surface-3"
-                 onClick={openJoinGroupModal}>
-              <PlusIcon size={17} color="#7c6ff0" />
-              <span className="text-sm text-ink">Join group by ID</span>
-            </div>
+        <div className="shrink-0 px-2 pt-2 pb-4 space-y-2">
+          <div className="rounded-md bg-surface-2 border border-line overflow-hidden">
+            <div className="px-3 pt-2 text-xs text-ink-dim">Groups</div>
+            <button onClick={() => setCreateRoomOpen(true)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-ink hover:bg-surface-3">
+              <PlusIcon size={15} color="#7c6ff0" />
+              Create group
+            </button>
+            <button onClick={openJoinGroupModal}
+                    className="w-full flex items-center gap-2 px-3 py-2 border-t border-line text-left text-sm text-ink hover:bg-surface-3">
+              <PlusIcon size={15} color="#7c6ff0" />
+              Join group by ID
+            </button>
           </div>
+          <button onClick={() => setCreateDmOpen(true)}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-md bg-surface-2 border border-line text-sm text-ink hover:bg-surface-3">
+            <PlusIcon size={15} color="#7c6ff0" />
+            Create direct message
+          </button>
         </div>
 
         <div className="h-16 flex items-center px-3 gap-2.5 shrink-0 border-t border-line">

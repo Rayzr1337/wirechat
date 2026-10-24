@@ -4,21 +4,21 @@ interface ToastProps {
 }
 
 export function Toast({ toast, onRemove }: ToastProps) {
-  const typeColors = {
-    success: { bg: "#4fb3a9", text: "#0f0f14" },
-    error: { bg: "#c97bb0", text: "#0f0f14" },
-    info: { bg: "#7c6ff0", text: "#ffffff" },
+  const accents = {
+    success: "#4fb3a9",
+    error: "#c97bb0",
+    info: "#7c6ff0",
   };
-  const colors = typeColors[toast.type];
 
   return (
-    <div className="flex items-start rounded-md px-4 py-3 shadow-lg"
-         style={{ backgroundColor: colors.bg, color: colors.text, animation: 'slideIn 0.3s ease-out' }}>
-      <div>
-        <div className="text-sm font-medium">{toast.message}</div>
-      </div>
+    <div className="flex items-center gap-3 min-w-[280px] max-w-sm rounded-md bg-surface-2 border border-line px-3.5 py-2.5 shadow-xl"
+         style={{ animation: 'slideIn 0.25s ease-out', borderLeftColor: accents[toast.type], borderLeftWidth: 3 }}>
+      <span className="text-sm font-medium flex-1" style={{ color: "#e8e8f0" }}>{toast.message}</span>
       <button onClick={() => onRemove(toast.id)}
-              className="ml-auto mt-0.5 text-sm opacity-60 hover:opacity-100">✕</button>
+              aria-label="Dismiss"
+              className="shrink-0 w-6 h-6 -mr-1.5 rounded flex items-center justify-center hover:bg-surface-3 transition-colors">
+        <span className="text-xs" style={{ color: "#8b8b9e" }}>✕</span>
+      </button>
     </div>
   );
 }

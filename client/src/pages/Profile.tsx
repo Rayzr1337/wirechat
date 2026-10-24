@@ -49,7 +49,7 @@ export function Profile() {
             Back to Rooms
           </Link>
           <div className="flex items-center gap-4 mb-6">
-            <Avatar name={me.username} hue="#7c6ff0" size={64} userId={me.id} />
+            <Avatar name={username || me.username} hue="#7c6ff0" size={64} userId={me.id} avatarUrl={avatarUrl || undefined} />
             <div>
               <h1 className="font-display font-semibold text-lg text-ink">{me.username}</h1>
               <p className="text-sm text-ink-muted">{me.email}</p>

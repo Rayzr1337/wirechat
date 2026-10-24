@@ -6,6 +6,7 @@ export interface Room {
   name: string | null;
   version: number;
   myRole?: string;
+  members?: { userId: string; username: string; avatarUrl: string | null }[];
 }
 
 export interface RoomMember {
@@ -33,11 +34,13 @@ export function getRooms() {
 }
 
 export function createRoom(roomName: string) {
-  return request<Room>('/api/rooms', { method: 'POST', body: { roomName } });
+  return request<{ message: string; room: Room }>('/api/rooms', { method: 'POST', body: { roomName } })
+    .then((data) => data.room);
 }
 
 export function createDirectRoom(targetUserId: string) {
-  return request<Room>('/api/rooms/direct', { method: 'POST', body: { targetUserId } });
+  return request<{ message: string; room: Room }>('/api/rooms/direct', { method: 'POST', body: { targetUserId } })
+    .then((data) => data.room);
 }
 
 export function joinRoom(roomId: string) {

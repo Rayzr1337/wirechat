@@ -12,19 +12,20 @@ interface RoomListItemProps {
     myRole?: string;
     version?: number;
   };
+  peer?: { userId: string; username: string; avatarUrl: string | null };
   onClick: () => void;
   active: boolean;
   index: number;
 }
 
-export function RoomListItem({ room, onClick, active, index }: RoomListItemProps) {
+export function RoomListItem({ room, peer, onClick, active, index }: RoomListItemProps) {
   const { presences } = usePresenceStore();
   const { unreadCounts } = useUnreadStore();
   const unread = unreadCounts[room.id] ?? 0;
 
   const isDirect = room.type === 'DIRECT';
-  const displayName = room.name ?? (isDirect ? 'Direct Message' : 'Group');
-  const online = isDirect ? presences[room.id]?.online : undefined;
+  const displayName = peer?.username ?? room.name ?? (isDirect ? 'Direct Message' : 'Group');
+  const online = peer ? presences[peer.userId]?.online : undefined;
 
   return (
     <Link
@@ -34,7 +35,7 @@ export function RoomListItem({ room, onClick, active, index }: RoomListItemProps
     >
       {isDirect ? (
         <div className="relative">
-          <Avatar name={displayName} hue="#4fb3a9" size={26} userId={room.id} />
+          <Avatar name={displayName} hue="#4fb3a9" size={26} userId={peer?.userId} avatarUrl={peer?.avatarUrl ?? undefined} />
           {online !== undefined && (
             <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
                   style={{ backgroundColor: online ? "#7c6ff0" : "#5c5c6e", boxShadow: "0 0 0 2px #15151d" }} />

@@ -75,8 +75,9 @@ export function handleInbound(data: OutgoingMessage) {
 
     case 'ROOM_DELETED': {
       const { roomId } = data.payload;
-      queryClient.removeQueries({ queryKey: ['messages', roomId] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      queryClient.removeQueries({ queryKey: ['rooms', roomId] });
+      queryClient.removeQueries({ queryKey: ['messages', roomId] });
       break;
     }
 

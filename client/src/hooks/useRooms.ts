@@ -138,8 +138,10 @@ export function useDeleteRoom() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: deleteRoomApi,
-    onSuccess: () => {
+    onSuccess: (_data, roomId) => {
       qc.invalidateQueries({ queryKey: ['rooms'] });
+      qc.removeQueries({ queryKey: ['rooms', roomId] });
+      qc.removeQueries({ queryKey: ['messages', roomId] });
     },
   });
 }

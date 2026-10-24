@@ -14,6 +14,8 @@ export function Settings() {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail.trim());
+  const emailError = newEmail.trim() && !emailValid ? 'Enter a valid email address' : null;
 
   if (isPending) return null;
   if (!me) return null;
@@ -83,8 +85,9 @@ export function Settings() {
                     type="email"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
-                    className="w-full px-3 py-2 rounded-md bg-surface-2 border border-line text-ink outline-none"
+                    className={`w-full px-3 py-2 rounded-md bg-surface-2 border text-ink outline-none ${emailError ? 'border-[#c97bb0]' : 'border-line'}`}
                   />
+                  {emailError && <div className="text-xs text-[#c97bb0] mt-1">{emailError}</div>}
                 </div>
                 <button onClick={() => {
                   requestEmailChange({ newEmail }, {
@@ -97,7 +100,8 @@ export function Settings() {
                     },
                   });
                 }}
-                        className="w-auto py-2 px-4 rounded-md bg-accent text-surface-0 text-sm font-medium hover:bg-accent-hover">
+                        disabled={!newEmail.trim() || !!emailError}
+                        className="w-auto py-2 px-4 rounded-md bg-accent text-surface-0 text-sm font-medium hover:bg-accent-hover disabled:opacity-50 disabled:hover:bg-accent">
                   Request Email Change
                 </button>
               </div>

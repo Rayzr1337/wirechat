@@ -23,11 +23,12 @@ import { ApiError } from '../api/client';
 export function RoomView() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const { data: room, isPending: roomPending, isError: roomError } = useRoom(roomId ?? null);
+  const { data: room, isPending: roomPending, isError: roomIsError, error: roomErrorValue } = useRoom(roomId ?? null);
   const { data: messages = [], isPending: messagesPending } = useMessages(roomId ?? null);
   const { data: members = [] } = useRoomMembers(roomId ?? null);
   const { membersSidebarOpen, toggleMembersSidebar, addToast } = useUiStore();
   const { clearUnread } = useUnreadStore();
+  const skipNotFoundRef = useRef<string | null>(null);
   const { setPresence } = usePresenceStore();
   const { connected } = useSocketStore();
   const { data: presences } = useRoomPresences(roomId ?? null);
@@ -52,10 +53,19 @@ export function RoomView() {
   }, [presences, setPresence]);
 
   useEffect(() => {
-    if (!roomError) return;
+    if (connected && me) setPresence(me.id, true);
+  }, [connected, me, setPresence]);
+
+  useEffect(() => {
+    if (!roomIsError) return;
+    if (!(roomErrorValue instanceof ApiError) || roomErrorValue.statusCode !== 404) return;
+    if (skipNotFoundRef.current === roomId) {
+      skipNotFoundRef.current = null;
+      return;
+    }
     addToast('This room is no longer available', 'error');
     navigate('/rooms');
-  }, [roomError, addToast, navigate]);
+  }, [roomIsError, roomErrorValue, addToast, navigate, roomId]);
 
   const senderById: Record<string, { username: string; avatarUrl: string | null }> = {};
   for (const member of members) {
@@ -64,9 +74,11 @@ export function RoomView() {
 
   const resolveSender = (message: (typeof messages)[number]) => {
     const member = message.senderId ? senderById[message.senderId] : undefined;
+    const username = member?.username ?? message.sender?.username;
     return {
-      username: member?.username ?? message.sender?.username,
+      username: username ?? 'Deleted User',
       avatarUrl: member?.avatarUrl ?? message.sender?.avatarUrl ?? undefined,
+      deleted: !username,
     };
   };
 
@@ -119,6 +131,7 @@ export function RoomView() {
   const handleDeleteGroup = () => {
     if (!roomId || !window.confirm(`Delete this group permanently? All messages will be lost.`)) return;
     runAction(async () => {
+      skipNotFoundRef.current = roomId;
       await deleteRoomRest(roomId);
       leaveRoomSocket();
       navigate('/rooms');
@@ -141,7 +154,8 @@ export function RoomView() {
   }
 
   const isDirect = room.type === 'DIRECT';
-  const displayName = room.name ?? 'Direct Message';
+  const dmPeer = isDirect ? members.find((m) => m.userId !== me?.id)?.user : undefined;
+  const displayName = room.name ?? dmPeer?.username ?? 'Direct Message';
   const sortedMessages = [...messages].reverse();
 
   return (
@@ -181,6 +195,7 @@ export function RoomView() {
                 grouped={grouped}
                 senderName={sender.username}
                 senderAvatarUrl={sender.avatarUrl}
+                senderDeleted={sender.deleted}
                 onEdit={message.senderId === me?.id ? (content) => editMessage(message.id, content) : undefined}
                 onDelete={message.senderId === me?.id ? () => deleteMessage(message.id) : undefined}
               />
@@ -202,39 +217,43 @@ export function RoomView() {
       </div>
 
       {membersSidebarOpen && (
-        <div className="w-56 shrink-0 overflow-y-auto py-4 px-3 bg-surface-1 border-l border-line">
-          {[
-            { label: 'Owner', list: members.filter((m) => m.role === 'OWNER') },
-            { label: 'Admin', list: members.filter((m) => m.role === 'ADMIN') },
-            { label: 'Member', list: members.filter((m) => m.role === 'MEMBER') },
-          ].map((section) => section.list.length > 0 && (
-            <div key={section.label} className="mb-4">
-              <div className="px-1.5 mb-1.5 text-xs text-ink-dim">
-                {section.label}{section.list.length > 1 ? 's' : ''} — {section.list.length}
+        <div className="w-56 shrink-0 flex flex-col bg-surface-1 border-l border-line py-4">
+          <div className="flex-1 overflow-y-auto min-h-0 px-3">
+            {[
+              { label: 'Owner', list: members.filter((m) => m.role === 'OWNER') },
+              { label: 'Admin', list: members.filter((m) => m.role === 'ADMIN') },
+              { label: 'Member', list: members.filter((m) => m.role === 'MEMBER') },
+            ].map((section) => section.list.length > 0 && (
+              <div key={section.label} className="mb-4">
+                <div className="px-1.5 mb-1.5 text-xs text-ink-dim">
+                  {section.label}{section.list.length > 1 ? 's' : ''} — {section.list.length}
+                </div>
+                <div className="space-y-0.5">
+                  {section.list.map((member) => (
+                    <MemberListItem
+                      key={member.userId}
+                      member={member}
+                      actions={!isDirect ? memberActions(member) : undefined}
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="space-y-0.5">
-                {section.list.map((member) => (
-                  <MemberListItem
-                    key={member.userId}
-                    member={member}
-                    actions={!isDirect ? memberActions(member) : undefined}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-          <div className="mt-4 space-y-2">
-            <button onClick={handleLeaveRoom}
-                    className="w-full py-2 rounded-md border border-line text-ink text-sm hover:bg-surface-2">
-              Leave Room
-            </button>
-            {!isDirect && isOwner && (
-              <button onClick={handleDeleteGroup}
-                      className="w-full py-2 rounded-md border border-[#c97bb0] text-[#c97bb0] text-sm hover:bg-[#c97bb0]/10">
-                Delete Group
-              </button>
-            )}
+            ))}
           </div>
+          {!isDirect && (
+            <div className="shrink-0 px-3 mt-3 pt-3 space-y-2 border-t border-line">
+              <button onClick={handleLeaveRoom}
+                      className="w-full py-2 rounded-md border border-line text-ink text-sm hover:bg-surface-2">
+                Leave Room
+              </button>
+              {isOwner && (
+                <button onClick={handleDeleteGroup}
+                        className="w-full py-2 rounded-md border border-[#c97bb0] text-[#c97bb0] text-sm hover:bg-[#c97bb0]/10">
+                  Delete Group
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

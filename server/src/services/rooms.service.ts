@@ -13,7 +13,13 @@ export async function getUserRooms(userId: string) {
     }
     
     const memberships = await roomRepository.getUserRooms(userId);
-    return memberships.map((m) => ({ ...m.room, myRole: m.role }));
+    return memberships.map((m) => ({
+        ...m.room,
+        myRole: m.role,
+        members: m.room.type === "DIRECT"
+            ? m.room.members.map((mm) => ({ userId: mm.userId, username: mm.user.username, avatarUrl: mm.user.avatarUrl }))
+            : [],
+    }));
 }
 
 export async function getRoomMembers(roomId: string, requestingUserId: string) {

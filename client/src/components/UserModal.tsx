@@ -1,4 +1,5 @@
 import { Avatar } from './Avatar';
+import { usePresenceStore } from '../stores/presenceStore';
 
 interface UserModalProps {
   open: boolean;
@@ -10,6 +11,9 @@ interface UserModalProps {
 }
 
 export function UserModal({ open, onClose, userId, username, avatarUrl, createdAt }: UserModalProps) {
+  const { presences } = usePresenceStore();
+  const online = presences[userId]?.online ?? false;
+
   if (!open) return null;
 
   return (
@@ -31,8 +35,8 @@ export function UserModal({ open, onClose, userId, username, avatarUrl, createdA
           </div>
           <div className="flex items-center gap-3 text-sm">
             <span style={{ color: "#8b8b9e" }}>Status</span>
-            <span style={{ color: "#7c6ff0" }}>●</span>
-            <span style={{ color: "#c8c8d8" }}>Online</span>
+            <span style={{ color: online ? "#7c6ff0" : "#5c5c6e" }}>●</span>
+            <span style={{ color: "#c8c8d8" }}>{online ? 'Online' : 'Offline'}</span>
           </div>
         </div>
         <div className="mt-6">

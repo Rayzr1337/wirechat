@@ -17,11 +17,12 @@ interface MessageBubbleProps {
   grouped: boolean;
   senderName?: string;
   senderAvatarUrl?: string;
+  senderDeleted?: boolean;
   onEdit?: (content: string) => void;
   onDelete?: () => void;
 }
 
-export function MessageBubble({ message, isSelf, showTimestamp, grouped, senderName, senderAvatarUrl, onEdit, onDelete }: MessageBubbleProps) {
+export function MessageBubble({ message, isSelf, showTimestamp, grouped, senderName, senderAvatarUrl, senderDeleted, onEdit, onDelete }: MessageBubbleProps) {
   const { presences } = usePresenceStore();
   const senderPresence = message.senderId ? presences[message.senderId] : undefined;
   const senderOnline = senderPresence?.online;
@@ -35,7 +36,7 @@ export function MessageBubble({ message, isSelf, showTimestamp, grouped, senderN
     if (editing) editInputRef.current?.focus();
   }, [editing]);
 
-  const displayName = senderName ?? message.senderId ?? 'Unknown';
+  const displayName = senderName ?? message.senderId ?? 'Deleted User';
 
   const startEdit = () => {
     setDraft(message.content);
@@ -61,7 +62,9 @@ export function MessageBubble({ message, isSelf, showTimestamp, grouped, senderN
       <div className="w-9 shrink-0">
         {!grouped && (
           <div className="flex justify-center">
-            <Avatar name={displayName} size={36} userId={message.senderId ?? undefined} avatarUrl={senderAvatarUrl} />
+            <Avatar name={displayName} size={36} userId={message.senderId ?? undefined}
+                  avatarUrl={senderDeleted ? undefined : senderAvatarUrl}
+                  placeholder={senderDeleted} />
           </div>
         )}
       </div>

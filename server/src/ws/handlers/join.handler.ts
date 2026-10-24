@@ -4,6 +4,7 @@ import { AuthenticatedSocket } from '../server';
 import { addSocketToRoom } from '../roomRegistry';
 import { broadcastToRoom } from '../broadcast';
 import { joinRoom } from '../../services/rooms.service';
+import { roomRepository } from '../../repositories/room.repository';
 import { AppError } from '../../middleware/error.middleware';
 
 type JoinRoomMessage = z.infer<typeof joinRoomSchema>;
@@ -19,7 +20,10 @@ export async function handleJoinRoom(userId: string, ws: AuthenticatedSocket, in
     try {
         await joinRoom(userId, roomId);
     } catch (err) {
-        if (!(err instanceof AppError) || err.code !== "ALREADY_MEMBER") {
+        const alreadyMember = err instanceof AppError && err.code === "ALREADY_MEMBER";
+        const directMember = err instanceof AppError && err.code === "CANNOT_JOIN_DIRECT_ROOM"
+            && await roomRepository.isMemberOfRoom(roomId, userId);
+        if (!alreadyMember && !directMember) {
             throw err;
         }
     }
