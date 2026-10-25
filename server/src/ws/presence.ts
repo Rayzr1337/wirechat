@@ -7,6 +7,7 @@ import { redisClient } from "../libs/redis";
 const STALE_THRESHOLD_MS = 45_000;
 const SWEEP_INTERVAL_MS = 60_000;
 const PRESENCE_ZSET = "presence:heartbeats";
+const PRESENCE_SOCKETS = "presence:sockets";
 
 type PresenceUpdate = z.infer<typeof presenceUpdateSchema>;
 
@@ -23,6 +24,18 @@ export async function broadcastPresenceUpdate(userId: string, isOnline: boolean)
   }
 }
 
+export async function addUserConnection(userId: string, socketId: string): Promise<boolean> {
+  const socketsKey = `${PRESENCE_SOCKETS}:${userId}`;
+  const results = await redisClient.multi().sAdd(socketsKey, socketId).sCard(socketsKey).exec() as unknown as [number, number];
+  return results[1] === 1;
+}
+
+export async function removeUserConnection(userId: string, socketId: string): Promise<boolean> {
+  const socketsKey = `${PRESENCE_SOCKETS}:${userId}`;
+  const results = await redisClient.multi().sRem(socketsKey, socketId).sCard(socketsKey).exec() as unknown as [number, number];
+  return results[1] === 0;
+}
+
 let sweepHandle: NodeJS.Timeout | null = null;
 
 export function startPresenceSweep() {
@@ -35,7 +48,7 @@ export function startPresenceSweep() {
 
       for (const userId of staleUserIds) {
         await redisClient.zRem(PRESENCE_ZSET, userId);
-        await redisClient.del(`presence:count:${userId}`);
+        await redisClient.del(`${PRESENCE_SOCKETS}:${userId}`);
         await broadcastPresenceUpdate(userId, false);
       }
     } catch (err) {

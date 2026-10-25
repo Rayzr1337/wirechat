@@ -16,7 +16,6 @@ import { useUiStore } from '../stores/uiStore';
 import { usePresenceStore } from '../stores/presenceStore';
 import { useSocketStore } from '../stores/socketStore';
 import { useTypingStore } from '../stores/typingStore';
-import { useUnreadStore } from '../stores/unreadStore';
 import { useMe } from '../hooks/useMe';
 import { ApiError } from '../api/client';
 
@@ -26,8 +25,7 @@ export function RoomView() {
   const { data: room, isPending: roomPending, isError: roomIsError, error: roomErrorValue } = useRoom(roomId ?? null);
   const { data: messages = [], isPending: messagesPending } = useMessages(roomId ?? null);
   const { data: members = [] } = useRoomMembers(roomId ?? null);
-  const { membersSidebarOpen, toggleMembersSidebar, addToast } = useUiStore();
-  const { clearUnread } = useUnreadStore();
+  const { membersSidebarOpen, toggleMembersSidebar, addToast, forcedExit, setForcedExit } = useUiStore();
   const skipNotFoundRef = useRef<string | null>(null);
   const { setPresence } = usePresenceStore();
   const { connected } = useSocketStore();
@@ -42,10 +40,6 @@ export function RoomView() {
   const { mutateAsync: deleteRoomRest } = useDeleteRoom();
 
   useEffect(() => {
-    if (roomId) clearUnread(roomId);
-  }, [roomId, clearUnread]);
-
-  useEffect(() => {
     if (!presences) return;
     for (const entry of presences) {
       setPresence(entry.userId, entry.isOnline, entry.lastSeen);
@@ -55,6 +49,13 @@ export function RoomView() {
   useEffect(() => {
     if (connected && me) setPresence(me.id, true);
   }, [connected, me, setPresence]);
+
+  useEffect(() => {
+    if (!forcedExit || forcedExit.roomId !== roomId) return;
+    addToast(`You have been removed from ${forcedExit.roomName}`, 'error');
+    navigate('/rooms');
+    setForcedExit(null);
+  }, [forcedExit, roomId, addToast, navigate, setForcedExit]);
 
   useEffect(() => {
     if (!roomIsError) return;
@@ -175,7 +176,7 @@ export function RoomView() {
           </div>
         )}
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4">
           {messagesPending && (
             <div className="text-center text-ink-muted text-sm">Loading messages...</div>
           )}

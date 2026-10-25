@@ -6,6 +6,7 @@ export interface Room {
   name: string | null;
   version: number;
   myRole?: string;
+  unreadCount?: number;
   members?: { userId: string; username: string; avatarUrl: string | null }[];
 }
 

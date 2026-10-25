@@ -12,12 +12,13 @@ export async function handleEditMessage(userId: string, ws: AuthenticatedSocket,
     const editedMsg: MessageEdited = {
         type: "MESSAGE_EDITED",
         payload: {
-            id: msg.id,
-            roomId: msg.roomId,
-            content: msg.content,
-            editedAt: msg.editedAt?.toISOString() ?? new Date().toISOString()
+            id: msg.message.id,
+            roomId: msg.message.roomId,
+            content: msg.message.content,
+            editedAt: msg.message.editedAt?.toISOString() ?? new Date().toISOString(),
+            roomVersion: msg.roomVersion
         }
     };
 
-    await broadcastToRoom(msg.roomId, editedMsg);
+    await broadcastToRoom(msg.message.roomId, editedMsg);
 }

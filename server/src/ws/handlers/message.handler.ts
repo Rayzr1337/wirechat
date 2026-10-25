@@ -8,7 +8,7 @@ type InboundMessage = z.infer<typeof inboundMessageSchema>;
 type OutboundMessage = z.infer<typeof outboundMessageSchema>;
 
 export async function handleMessage(userId: string, ws: AuthenticatedSocket, incomingMessage: InboundMessage) {
-    const msg = await sendMessage(userId, incomingMessage.payload.roomId, incomingMessage.payload.content);
+    const { message: msg, roomVersion } = await sendMessage(userId, incomingMessage.payload.roomId, incomingMessage.payload.content);
     const outMsg: OutboundMessage = {
         type: "MESSAGE",
         payload: {
@@ -16,7 +16,9 @@ export async function handleMessage(userId: string, ws: AuthenticatedSocket, inc
             roomId: msg.roomId,
             senderId: msg.senderId ?? "",
             content: msg.content,
-            createdAt: msg.createdAt.toISOString()
+            createdAt: msg.createdAt.toISOString(),
+            editedAt: msg.editedAt ? msg.editedAt.toISOString() : null,
+            roomVersion
         }
     };
     

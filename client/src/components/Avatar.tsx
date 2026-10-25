@@ -1,4 +1,5 @@
 import { usePresenceStore } from '../stores/presenceStore';
+import { useMe } from '../hooks/useMe';
 import { UserIcon } from './icons';
 
 const USER_PALETTE = ["#7c6ff0", "#4fb3a9", "#d98a5f", "#5f9dd9", "#c97bb0", "#e0b64f"];
@@ -24,8 +25,10 @@ interface AvatarProps {
 
 export function Avatar({ name, hue, size = 36, userId, online, avatarUrl, placeholder }: AvatarProps) {
   const { presences } = usePresenceStore();
+  const { data: me } = useMe();
   const storePresence = userId ? presences[userId] : undefined;
-  const isOnline = placeholder ? undefined : (online ?? storePresence?.online);
+  const isSelf = !!userId && !!me && userId === me.id;
+  const isOnline = placeholder ? undefined : (isSelf ? true : (online ?? storePresence?.online));
   const resolvedHue = placeholder ? "#3a3a46" : (hue ?? hueForUser(userId));
 
   return (
@@ -38,7 +41,7 @@ export function Avatar({ name, hue, size = 36, userId, online, avatarUrl, placeh
       ) : (
         name[0].toUpperCase()
       )}
-      {isOnline !== undefined && (
+      {(isSelf || isOnline !== undefined) && (
         <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full z-[1]"
               style={{ backgroundColor: isOnline ? "#7c6ff0" : "#5c5c6e", boxShadow: "0 0 0 2px #15151d" }} />
       )}

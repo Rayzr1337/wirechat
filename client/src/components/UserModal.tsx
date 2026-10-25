@@ -1,5 +1,6 @@
 import { Avatar } from './Avatar';
 import { usePresenceStore } from '../stores/presenceStore';
+import { useMe } from '../hooks/useMe';
 
 interface UserModalProps {
   open: boolean;
@@ -12,7 +13,8 @@ interface UserModalProps {
 
 export function UserModal({ open, onClose, userId, username, avatarUrl, createdAt }: UserModalProps) {
   const { presences } = usePresenceStore();
-  const online = presences[userId]?.online ?? false;
+  const { data: me } = useMe();
+  const online = userId === me?.id ? true : (presences[userId]?.online ?? false);
 
   if (!open) return null;
 

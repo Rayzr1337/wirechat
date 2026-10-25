@@ -1,6 +1,5 @@
 import { Link } from 'react-router';
 import { usePresenceStore } from '../stores/presenceStore';
-import { useUnreadStore } from '../stores/unreadStore';
 import { Avatar } from './Avatar';
 import { GroupIcon } from './GroupIcon';
 
@@ -11,6 +10,7 @@ interface RoomListItemProps {
     name: string | null;
     myRole?: string;
     version?: number;
+    unreadCount?: number;
   };
   peer?: { userId: string; username: string; avatarUrl: string | null };
   onClick: () => void;
@@ -20,12 +20,11 @@ interface RoomListItemProps {
 
 export function RoomListItem({ room, peer, onClick, active, index }: RoomListItemProps) {
   const { presences } = usePresenceStore();
-  const { unreadCounts } = useUnreadStore();
-  const unread = unreadCounts[room.id] ?? 0;
 
   const isDirect = room.type === 'DIRECT';
   const displayName = peer?.username ?? room.name ?? (isDirect ? 'Direct Message' : 'Group');
   const online = peer ? presences[peer.userId]?.online : undefined;
+  const unread = room.unreadCount ?? 0;
 
   return (
     <Link
