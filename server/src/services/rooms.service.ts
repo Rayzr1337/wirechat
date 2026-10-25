@@ -50,8 +50,9 @@ export async function getRoomPresences(roomId: string, requestingUserId: string)
     const members = await roomRepository.getRoomMembers(roomId);
     const userIds = members.map(m => m.userId);
 
-    const countKeys = userIds.map(id => `presence:count:${id}`);
-    const counts = await redisClient.mGet(countKeys);
+    const onlineStates = await Promise.all(
+        userIds.map((id) => redisClient.sCard(`presence:sockets:${id}`))
+    );
 
     const heartbeats = await redisClient.zmScore('presence:heartbeats', userIds);
 
@@ -60,7 +61,7 @@ export async function getRoomPresences(roomId: string, requestingUserId: string)
         username: member.user.username,
         avatarUrl: member.user.avatarUrl,
         role: member.role,
-        isOnline: counts[i] !== null && parseInt(counts[i]) > 0,
+        isOnline: onlineStates[i] > 0,
         lastSeen: heartbeats[i] ? new Date(heartbeats[i]).toISOString() : null,
     }));
 }

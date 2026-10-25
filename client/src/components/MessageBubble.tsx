@@ -25,7 +25,7 @@ interface MessageBubbleProps {
 export function MessageBubble({ message, isSelf, showTimestamp, grouped, senderName, senderAvatarUrl, senderDeleted, onEdit, onDelete }: MessageBubbleProps) {
   const { presences } = usePresenceStore();
   const senderPresence = message.senderId ? presences[message.senderId] : undefined;
-  const senderOnline = senderPresence?.online;
+  const senderOnline = isSelf ? true : senderPresence?.online;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
