@@ -12,10 +12,11 @@ export async function handleDeleteMessage(userId: string, ws: AuthenticatedSocke
     const deletedMsg: MessageDeleted = {
         type: "MESSAGE_DELETED",
         payload: {
-            id: msg.id,
-            roomId: msg.roomId
+            id: msg.message.id,
+            roomId: msg.message.roomId,
+            roomVersion: msg.roomVersion
         }
     };
 
-    await broadcastToRoom(msg.roomId, deletedMsg);
+    await broadcastToRoom(msg.message.roomId, deletedMsg);
 }
