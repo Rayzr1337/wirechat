@@ -4,11 +4,12 @@ import { useUiStore } from '../stores/uiStore';
 import { useUnreadStore } from '../stores/unreadStore';
 import { useRoom } from '../hooks/useRoom';
 import { useMe } from '../hooks/useMe';
+import { queryClient } from '../lib/queryClient';
 
 export function useRoomChannel(roomId: string | null) {
   const { send, addJoinedRoom, removeJoinedRoom } = useSocketStore();
   const { setActiveRoomId } = useUiStore();
-  const { clearUnread, setLastSeenVersion } = useUnreadStore();
+  const { setLastSeenVersion } = useUnreadStore();
 
   const { data: room } = useRoom(roomId);
   const { data: me } = useMe();
@@ -26,7 +27,7 @@ export function useRoomChannel(roomId: string | null) {
     send('JOIN_ROOM', { roomId });
     addJoinedRoom(roomId);
     setActiveRoomId(roomId);
-    clearUnread(roomId);
+    queryClient.invalidateQueries({ queryKey: ['rooms'] });
 
     if (room) {
       setLastSeenVersion(roomId, room.version);
@@ -35,7 +36,7 @@ export function useRoomChannel(roomId: string | null) {
     return () => {
       setActiveRoomId(null);
     };
-  }, [roomId, me, send, addJoinedRoom, setActiveRoomId, clearUnread, room, setLastSeenVersion]);
+  }, [roomId, me, send, addJoinedRoom, setActiveRoomId, room, setLastSeenVersion]);
 
   useEffect(() => {
     if (!roomId || !room) return;

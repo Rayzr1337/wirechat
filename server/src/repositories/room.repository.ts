@@ -6,6 +6,7 @@ export type client = PrismaClient | Prisma.TransactionClient;
 type RoomWithPeers = {
     room: Omit<Room, "members"> & { members: (RoomMember & { user: { id: string; username: string; avatarUrl: string | null } })[] };
     role: RoomMemberRole;
+    unreadCount: number;
 };
 
 class RoomRepository {
@@ -63,6 +64,20 @@ class RoomRepository {
             },
         });
         return member !== null;
+    }
+
+    async resetUnreadCount(roomId: string, userId: string): Promise<void> {
+        await prisma.roomMember.updateMany({
+            where: { roomId, userId },
+            data: { unreadCount: 0 },
+        });
+    }
+
+    async countUnreadsForOthers(roomId: string, senderId: string): Promise<void> {
+        await prisma.roomMember.updateMany({
+            where: { roomId, userId: { not: senderId } },
+            data: { unreadCount: { increment: 1 } },
+        });
     }
 
     async addMemberToRoom(roomId: string, userId: string, role: RoomMemberRole = "MEMBER", thisClient: client = prisma): Promise<RoomMember> {

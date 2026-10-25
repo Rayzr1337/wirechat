@@ -32,6 +32,8 @@ export async function sendMessage(senderId: string, roomId: string, content: str
         roomId
     );
 
+    await roomRepository.countUnreadsForOthers(roomId, senderId);
+
     return message;
 }
 

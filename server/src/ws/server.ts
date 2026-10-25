@@ -5,7 +5,8 @@ import { redisClient } from "../libs/redis";
 import { Duplex } from "stream";
 import { AppError } from "../middleware/error.middleware";
 import type { IncomingMessage, ErrorCode } from "./protocol/schemas";
-import { removeSocketFromRoom, addUserSocket, removeUserSocket } from "./roomRegistry";
+import { removeSocketFromRoom, addUserSocket, removeUserSocket, addSocketToRoom } from "./roomRegistry";
+import { roomRepository } from "../repositories/room.repository";
 
 import { handleJoinRoom } from "./handlers/join.handler";
 import { handleLeaveRoom } from "./handlers/leave.handler";
@@ -97,6 +98,12 @@ wss.on("connection", async (ws: AuthenticatedSocket) => {
 
   const wentOnline = await addUserConnection(ws.user!.id, ws.connectionId);
   await redisClient.zAdd(PRESENCE_ZSET, { score: Date.now(), value: ws.user!.id });
+
+  const membershipRooms = await roomRepository.getRoomsForUser(ws.user!.id);
+  for (const membership of membershipRooms) {
+    addSocketToRoom(membership.roomId, ws);
+    ws.rooms.add(membership.roomId);
+  }
 
   if (wentOnline) {
     await broadcastPresenceUpdate(ws.user!.id, true);

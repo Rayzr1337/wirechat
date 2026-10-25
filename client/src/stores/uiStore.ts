@@ -11,12 +11,14 @@ export interface UiStore {
   membersSidebarOpen: boolean
   joinGroupModalOpen: boolean
   toasts: Toast[]
+  forcedExit: { roomId: string; roomName: string } | null
   setActiveRoomId: (roomId: string | null) => void
   toggleMembersSidebar: () => void
   openJoinGroupModal: () => void
   closeJoinGroupModal: () => void
   addToast: (message: string, type?: Toast['type']) => void
   removeToast: (id: string) => void
+  setForcedExit: (exit: { roomId: string; roomName: string } | null) => void
 }
 
 export const useUiStore = create<UiStore>((set) => ({
@@ -24,6 +26,11 @@ export const useUiStore = create<UiStore>((set) => ({
   membersSidebarOpen: true,
   joinGroupModalOpen: false,
   toasts: [],
+  forcedExit: null,
+
+  setForcedExit: (exit) => {
+    set({ forcedExit: exit })
+  },
 
   setActiveRoomId: (roomId) => {
     set({ activeRoomId: roomId })

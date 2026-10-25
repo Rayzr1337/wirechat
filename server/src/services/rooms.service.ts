@@ -3,7 +3,7 @@ import { userRepository } from '../repositories/user.repository';
 import { AppError } from "../middleware/error.middleware";
 import { prisma } from '../libs/prisma';
 import { redisClient } from '../libs/redis';
-import { broadcastToUser, broadcastSocketLeave } from '../ws/broadcast';
+import { broadcastToUser, broadcastSocketLeave, broadcastToRoom } from '../ws/broadcast';
 import { RoomMember } from '../generated/prisma/client';
 
 export async function getUserRooms(userId: string) {
@@ -16,6 +16,7 @@ export async function getUserRooms(userId: string) {
     return memberships.map((m) => ({
         ...m.room,
         myRole: m.role,
+        unreadCount: m.unreadCount,
         members: m.room.type === "DIRECT"
             ? m.room.members.map((mm) => ({ userId: mm.userId, username: mm.user.username, avatarUrl: mm.user.avatarUrl }))
             : [],
@@ -76,6 +77,8 @@ export async function getRoomById(roomId: string, requestingUserId: string) {
     if (!isMember) {
         throw new AppError(403, "NOT_IN_ROOM", "User is not a member of this room.");
     }
+
+    await roomRepository.resetUnreadCount(roomId, requestingUserId);
 
     return room;
 }
@@ -193,6 +196,14 @@ export async function leaveRoom(userId: string, roomId: string) {
         }
 
         await roomRepository.removeMemberFromRoom(roomId, userId, tx);
+        await broadcastToRoom(roomId, {
+            type: "USER_LEFT",
+            payload: {
+                roomId,
+                userId,
+                timestamp: new Date().toISOString(),
+            },
+        }, userId);
         await broadcastSocketLeave(roomId, userId);
         return { message: "User has left the room." };
     });
@@ -327,7 +338,23 @@ export async function kickMember(roomId: string, kickerId: string, memberId: str
     }
     
     return roomRepository.removeMemberFromRoom(roomId, memberId).then(async () => {
+        await broadcastToRoom(roomId, {
+            type: "USER_LEFT",
+            payload: {
+                roomId,
+                userId: memberId,
+                timestamp: new Date().toISOString(),
+            },
+        }, memberId);
         await broadcastSocketLeave(roomId, memberId);
+        await broadcastToUser(memberId, {
+            type: "USER_LEFT",
+            payload: {
+                roomId,
+                userId: memberId,
+                timestamp: new Date().toISOString(),
+            },
+        });
     });
 }
 
