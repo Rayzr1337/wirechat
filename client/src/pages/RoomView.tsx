@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useRoomChannel } from '../ws/useRoomChannel';
-import { useMessages } from '../hooks/useMessages';
+import { useInfiniteMessages } from '../hooks/useMessages';
 import { useRoomMembers } from '../hooks/useRoomMembers';
 import { useRoomPresences } from '../hooks/useRoomPresences';
 import { useRoom } from '../hooks/useRoom';
@@ -23,7 +23,17 @@ export function RoomView() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { data: room, isPending: roomPending, isError: roomIsError, error: roomErrorValue } = useRoom(roomId ?? null);
-  const { data: messages = [], isPending: messagesPending } = useMessages(roomId ?? null);
+  const {
+    data: pages,
+    isPending: messagesPending,
+    isFetching: isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteMessages(roomId ?? null);
+
+  const messages = pages?.pages
+    .reverse()
+    .flatMap((page) => [...page].reverse()) ?? [];
   const { data: members = [] } = useRoomMembers(roomId ?? null);
   const { membersSidebarOpen, toggleMembersSidebar, addToast, forcedExit, setForcedExit } = useUiStore();
   const skipNotFoundRef = useRef<string | null>(null);
@@ -141,10 +151,34 @@ export function RoomView() {
   };
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevScrollHeightRef = useRef(0);
+  const isInitialRef = useRef(true);
+  const prevRoomIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages.length, roomId]);
+    if (!el) return;
+
+    const roomChanged = prevRoomIdRef.current !== (roomId ?? null);
+    prevRoomIdRef.current = roomId ?? null;
+
+    if (roomChanged || isInitialRef.current) {
+      el.scrollTop = el.scrollHeight;
+      isInitialRef.current = false;
+      prevScrollHeightRef.current = el.scrollHeight;
+      return;
+    }
+
+    const wasAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 50;
+    const prevHeight = prevScrollHeightRef.current;
+    prevScrollHeightRef.current = el.scrollHeight;
+
+    if (wasAtBottom) {
+      el.scrollTop = el.scrollHeight;
+    } else if (prevHeight > 0 && el.scrollHeight > prevHeight) {
+      el.scrollTop = el.scrollHeight - prevHeight;
+    }
+  }, [pages, roomId]);
 
   if (roomPending || !room) {
     return (
@@ -157,14 +191,14 @@ export function RoomView() {
   const isDirect = room.type === 'DIRECT';
   const dmPeer = isDirect ? members.find((m) => m.userId !== me?.id)?.user : undefined;
   const displayName = room.name ?? dmPeer?.username ?? 'Direct Message';
-  const sortedMessages = [...messages].reverse();
+  const sortedMessages = messages;
 
   return (
     <div className="flex-1 flex min-w-0 bg-surface-0 overflow-hidden">
       <div className="flex-1 flex flex-col min-w-0 bg-surface-0">
         <div className="h-14 flex items-center justify-between px-4 shrink-0 border-b border-line">
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate("/rooms")}>
-            <GroupIcon size={22} colorIndex={0} />
+            {!isDirect && <GroupIcon size={22} colorIndex={0} />}
             <span className="font-display font-medium text-lg text-ink truncate max-w-xs">{displayName}</span>
           </div>
           <UsersIcon size={17} color={membersSidebarOpen ? "#7c6ff0" : "#8b8b9e"} onClick={toggleMembersSidebar} />
@@ -172,11 +206,21 @@ export function RoomView() {
 
         {!connected && (
           <div className="shrink-0 px-5 py-1.5 text-xs text-center bg-[#c97bb0]/15 text-[#c97bb0] border-b border-line">
-            Connection lost — reconnecting...
+            Connection lost: reconnecting...
           </div>
         )}
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4">
+          {!messagesPending && hasNextPage && !isFetchingNextPage && (
+            <div className="text-center mb-2">
+              <button
+                onClick={() => fetchNextPage()}
+                className="text-xs text-ink hover:text-ink hover:underline"
+              >
+                Load older messages
+              </button>
+            </div>
+          )}
           {messagesPending && (
             <div className="text-center text-ink-muted text-sm">Loading messages...</div>
           )}

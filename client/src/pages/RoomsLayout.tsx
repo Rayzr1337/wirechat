@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router';
 import { useRooms, useJoinRoom, useCreateRoom, useCreateDirectRoom } from '../hooks/useRooms';
 import { useSearchUsers } from '../hooks/useSearchUsers';
@@ -6,11 +6,13 @@ import { RoomListItem } from '../components/RoomListItem';
 import { PlusIcon, SettingsIcon, WarningIcon } from '../components/icons';
 import { useUiStore } from '../stores/uiStore';
 import { useSocketStore } from '../stores/socketStore';
+import { usePresenceStore } from '../stores/presenceStore';
 import { useLogout, useResendVerification } from '../hooks/useAuth';
 import { useMe } from '../hooks/useMe';
 import { Avatar } from '../components/Avatar';
 import { useWebSocket } from '../ws/useWebSocket';
 import { ApiError } from '../api/client';
+import { getRoomPresences } from '../api/rooms';
 
 interface GroupRoom {
   id: string;
@@ -56,6 +58,27 @@ export function RoomsLayout() {
     if (room.type !== 'DIRECT') continue;
     dmPeerById[room.id] = room.members?.find((m) => m.userId !== me.id);
   }
+
+  useEffect(() => {
+    const fetchPresences = async () => {
+      if (directRooms.length === 0) return;
+      try {
+        const results = await Promise.all(
+          directRooms.map((room) => getRoomPresences(room.id))
+        );
+        const presencesMap: Record<string, { online: boolean; lastSeen: string | null }> = {};
+        for (const presences of results) {
+          for (const p of presences) {
+            presencesMap[p.userId] = { online: p.isOnline, lastSeen: p.lastSeen };
+          }
+        }
+        usePresenceStore.getState().setPresences(presencesMap);
+      } catch {
+        // Presence is non-critical; ignore failures.
+      }
+    };
+    fetchPresences();
+  }, [directRooms]);
 
   const openRoom = (roomId: string) => {
     addJoinedRoom(roomId);

@@ -3,6 +3,7 @@ import { usePresenceStore } from '../stores/presenceStore';
 import { useTypingStore } from '../stores/typingStore';
 import { useUiStore } from '../stores/uiStore';
 import { useSocketStore } from '../stores/socketStore';
+import { useUnreadStore } from '../stores/unreadStore';
 import type { Room } from '../api/rooms';
 import type { OutgoingMessage } from '../ws/protocol/schemas';
 
@@ -16,6 +17,7 @@ export function handleInbound(data: OutgoingMessage) {
       const { roomId } = data.payload;
       queryClient.invalidateQueries({ queryKey: ['messages', roomId] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      useUnreadStore.getState().setLastSeenVersion(roomId, data.payload.roomVersion);
       break;
     }
 
@@ -67,6 +69,7 @@ export function handleInbound(data: OutgoingMessage) {
       const { roomId } = data.payload;
       queryClient.invalidateQueries({ queryKey: ['messages', roomId] });
       queryClient.invalidateQueries({ queryKey: ['rooms', roomId] });
+      useUnreadStore.getState().setLastSeenVersion(roomId, data.payload.roomVersion);
       break;
     }
 
@@ -74,6 +77,7 @@ export function handleInbound(data: OutgoingMessage) {
       const { roomId } = data.payload;
       queryClient.invalidateQueries({ queryKey: ['messages', roomId] });
       queryClient.invalidateQueries({ queryKey: ['rooms', roomId] });
+      useUnreadStore.getState().setLastSeenVersion(roomId, data.payload.roomVersion);
       break;
     }
 

@@ -7,15 +7,16 @@ import { useMe } from '../hooks/useMe';
 import { queryClient } from '../lib/queryClient';
 
 export function useRoomChannel(roomId: string | null) {
-  const { send, addJoinedRoom, removeJoinedRoom } = useSocketStore();
+  const { send, addJoinedRoom, removeJoinedRoom, connected } = useSocketStore();
   const { setActiveRoomId } = useUiStore();
-  const { setLastSeenVersion } = useUnreadStore();
+  const { setLastSeenVersion, lastSeenVersion } = useUnreadStore();
 
   const { data: room } = useRoom(roomId);
   const { data: me } = useMe();
 
   const sendRef = useRef(send);
   const roomIdRef = useRef(roomId);
+  const wasConnectedRef = useRef(connected);
   sendRef.current = send;
   roomIdRef.current = roomId;
 
@@ -30,6 +31,10 @@ export function useRoomChannel(roomId: string | null) {
     queryClient.invalidateQueries({ queryKey: ['rooms'] });
 
     if (room) {
+      const lastSeen = lastSeenVersion[roomId];
+      if (lastSeen !== undefined && room.version !== lastSeen) {
+        queryClient.invalidateQueries({ queryKey: ['messages', roomId] });
+      }
       setLastSeenVersion(roomId, room.version);
     }
 
@@ -39,9 +44,15 @@ export function useRoomChannel(roomId: string | null) {
   }, [roomId, me, send, addJoinedRoom, setActiveRoomId, room, setLastSeenVersion]);
 
   useEffect(() => {
-    if (!roomId || !room) return;
-    setLastSeenVersion(roomId, room.version);
-  }, [roomId, room, setLastSeenVersion]);
+    if (!roomId) return;
+
+    const wasConnected = wasConnectedRef.current;
+    wasConnectedRef.current = connected;
+
+    if (!wasConnected && connected) {
+      queryClient.invalidateQueries({ queryKey: ['rooms', roomId] });
+    }
+  }, [roomId, connected]);
 
   const sendMessage = useCallback((content: string) => {
     send('MESSAGE', { roomId, content });
