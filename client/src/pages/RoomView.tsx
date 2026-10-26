@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useRoomChannel } from '../ws/useRoomChannel';
 import { useInfiniteMessages } from '../hooks/useMessages';
@@ -7,11 +7,12 @@ import { useRoomPresences } from '../hooks/useRoomPresences';
 import { useRoom } from '../hooks/useRoom';
 import { usePromoteMember, useDemoteMember, useKickMember, useTransferOwnership, useLeaveRoom, useDeleteRoom } from '../hooks/useRooms';
 import { MessageBubble } from '../components/MessageBubble';
+import { GroupInviteModal } from '../components/GroupInviteModal';
 import { MessageComposer } from '../components/MessageComposer';
 import { TypingIndicator } from '../components/TypingIndicator';
 import { MemberListItem, type MemberAction } from '../components/MemberListItem';
 import { GroupIcon } from '../components';
-import { UsersIcon } from '../components/icons';
+import { UsersIcon, HashIcon, XIcon, ArrowLeftIcon } from '../components/icons';
 import { useUiStore } from '../stores/uiStore';
 import { usePresenceStore } from '../stores/presenceStore';
 import { useSocketStore } from '../stores/socketStore';
@@ -42,6 +43,8 @@ export function RoomView() {
   const { data: presences } = useRoomPresences(roomId ?? null);
   const { data: me } = useMe();
   const { typing } = useTypingStore();
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [membersDrawerOpen, setMembersDrawerOpen] = useState(false);
 
   const typingUsers = [...(typing[roomId ?? ''] ?? [])].filter((id) => id !== me?.id);
 
@@ -180,6 +183,10 @@ export function RoomView() {
     }
   }, [pages, roomId]);
 
+  if (!roomId) {
+    return null;
+  }
+
   if (roomPending || !room) {
     return (
       <div className="flex-1 flex flex-col min-w-0 bg-surface-0 items-center justify-center text-ink-muted text-sm">
@@ -197,11 +204,25 @@ export function RoomView() {
     <div className="flex-1 flex min-w-0 bg-surface-0 overflow-hidden">
       <div className="flex-1 flex flex-col min-w-0 bg-surface-0">
         <div className="h-14 flex items-center justify-between px-4 shrink-0 border-b border-line">
+          <button className="md:hidden p-1 hover:bg-surface-2 rounded" onClick={() => navigate("/rooms")}>
+            <ArrowLeftIcon size={17} />
+          </button>
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate("/rooms")}>
             {!isDirect && <GroupIcon size={22} colorIndex={0} />}
             <span className="font-display font-medium text-lg text-ink truncate max-w-xs">{displayName}</span>
           </div>
-          <UsersIcon size={17} color={membersSidebarOpen ? "#7c6ff0" : "#8b8b9e"} onClick={toggleMembersSidebar} />
+          <span className="hidden md:block">
+            <UsersIcon size={17} color={membersSidebarOpen ? "#7c6ff0" : "#8b8b9e"} onClick={toggleMembersSidebar} />
+          </span>
+          <button className="md:hidden p-1 hover:bg-surface-2 rounded" onClick={() => setMembersDrawerOpen(true)}>
+            <UsersIcon size={17} color="#7c6ff0" />
+          </button>
+          {!isDirect && (
+            <button onClick={() => setInviteModalOpen(true)}
+                    className="p-1.5 hover:bg-surface-2 rounded">
+              <HashIcon size={16} color="#7c6ff0" />
+            </button>
+          )}
         </div>
 
         {!connected && (
@@ -262,7 +283,7 @@ export function RoomView() {
       </div>
 
       {membersSidebarOpen && (
-        <div className="w-56 shrink-0 flex flex-col bg-surface-1 border-l border-line py-4">
+        <div className="hidden sm:block w-56 shrink-0 flex flex-col bg-surface-1 border-l border-line py-4">
           <div className="flex-1 overflow-y-auto min-h-0 px-3">
             {[
               { label: 'Owner', list: members.filter((m) => m.role === 'OWNER') },
@@ -301,6 +322,56 @@ export function RoomView() {
           )}
         </div>
       )}
+      {membersDrawerOpen && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={() => setMembersDrawerOpen(false)} />
+          <div className="fixed inset-y-0 right-0 w-56 z-50 bg-surface-1 border-l border-line flex flex-col">
+            <div className="h-14 flex items-center justify-between px-3 shrink-0 border-b border-line">
+              <span className="font-medium text-ink">Members</span>
+              <button onClick={() => setMembersDrawerOpen(false)} className="p-1 hover:bg-surface-2 rounded">
+                <XIcon size={16} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto min-h-0 px-3 py-2">
+              {[
+                { label: 'Owner', list: members.filter((m) => m.role === 'OWNER') },
+                { label: 'Admin', list: members.filter((m) => m.role === 'ADMIN') },
+                { label: 'Member', list: members.filter((m) => m.role === 'MEMBER') },
+              ].map((section) => section.list.length > 0 && (
+                <div key={section.label} className="mb-4">
+                  <div className="px-1.5 mb-1.5 text-xs text-ink-dim">
+                    {section.label}{section.list.length > 1 ? 's' : ''} — {section.list.length}
+                  </div>
+                  <div className="space-y-0.5">
+                    {section.list.map((member) => (
+                      <MemberListItem
+                        key={member.userId}
+                        member={member}
+                        actions={!isDirect ? memberActions(member) : undefined}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {!isDirect && (
+              <div className="shrink-0 px-3 mt-3 pt-3 space-y-2 border-t border-line">
+                <button onClick={handleLeaveRoom}
+                        className="w-full py-2 rounded-md border border-line text-ink text-sm hover:bg-surface-2">
+                  Leave Room
+                </button>
+                {isOwner && (
+                  <button onClick={handleDeleteGroup}
+                          className="w-full py-2 rounded-md border border-[#c97bb0] text-[#c97bb0] text-sm hover:bg-[#c97bb0]/10">
+                    Delete Group
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+      <GroupInviteModal open={inviteModalOpen} onClose={() => setInviteModalOpen(false)} groupId={roomId ?? ''} />
     </div>
   );
 }

@@ -6,6 +6,7 @@ export { MessageComposer } from './MessageComposer';
 export { TypingIndicator } from './TypingIndicator';
 export { RoomListItem } from './RoomListItem';
 export { MemberListItem } from './MemberListItem';
+export { GroupInviteModal } from './GroupInviteModal';
 export { UserModal } from './UserModal';
 export { Toast } from './Toast';
 export { Toasts } from './Toasts';

@@ -23,7 +23,7 @@ export function createApp() {
 
     const apiLimit = rateLimit({
       windowMs: 5 * 60 * 1000,
-      max: 500,
+      max: 1000,
       standardHeaders: 'draft-7',
       legacyHeaders: false,
       message: {
