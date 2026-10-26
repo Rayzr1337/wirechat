@@ -4,6 +4,7 @@ import RequireAuth from "./routes/requireAuth";
 import LoginPage from "./pages/Auth/LoginPage";
 import RegisterPage from "./pages/Auth/RegisterPage";
 import VerifyEmailPage from "./pages/Auth/VerifyEmailPage";
+import VerificationSentPage from "./pages/Auth/VerificationSentPage";
 import Landing from "./pages/Landing";
 import { RoomsLayout } from "./pages/RoomsLayout";
 import RoomsPlaceholder from "./pages/Rooms";
@@ -23,6 +24,7 @@ export default function App() {
         </Route>
 
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/verify-email-sent" element={<VerificationSentPage />} />
 
         <Route path="/" element={<Landing />} />
 

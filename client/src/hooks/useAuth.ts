@@ -31,7 +31,7 @@ export function useRegister() {
             registerUser(data.username, data.email, data.password),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['me'] });
-            navigate("/", { replace: true });
+            navigate("/verify-email-sent", { replace: true });
         },
     });
 }
