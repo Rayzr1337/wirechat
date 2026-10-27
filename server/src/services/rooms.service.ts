@@ -4,6 +4,8 @@ import { AppError } from "../middleware/error.middleware";
 import { prisma } from '../libs/prisma';
 import { redisClient } from '../libs/redis';
 import { broadcastToUser, broadcastSocketLeave, broadcastToRoom } from '../ws/broadcast';
+import { addSocketToRoom, getUserSockets } from '../ws/roomRegistry';
+import { AuthenticatedSocket } from '../ws/server';
 import { RoomMember } from '../generated/prisma/client';
 
 export async function getUserRooms(userId: string) {
@@ -125,6 +127,15 @@ export async function createDirectRoom(userId1: string, userId2: string) {
         const room = await roomRepository.createRoom({ type: "DIRECT", directKey: directKey }, tx);
         await roomRepository.addMemberToRoom(room.id, userId1, "MEMBER", tx);
         await roomRepository.addMemberToRoom(room.id, userId2, "MEMBER", tx);
+
+        // Register User B's connected sockets to the new room immediately,
+        // so messages sent right after DM creation reach User B's socket.
+        const userBSockets = getUserSockets(userId2);
+        for (const ws of userBSockets) {
+            addSocketToRoom(room.id, ws);
+            (ws as AuthenticatedSocket).rooms?.add(room.id);
+        }
+
         await broadcastToUser(userId2, {
             type: "DIRECT_ROOM_CREATED",
             payload: { roomId: room.id, withUserId: userId1, timestamp: new Date().toISOString() },
