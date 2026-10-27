@@ -3,7 +3,9 @@ import { userRepository } from '../repositories/user.repository';
 import { AppError } from "../middleware/error.middleware";
 import { prisma } from '../libs/prisma';
 import { redisClient } from '../libs/redis';
-import { broadcastToUser, broadcastSocketLeave } from '../ws/broadcast';
+import { broadcastToUser, broadcastSocketLeave, broadcastToRoom } from '../ws/broadcast';
+import { addSocketToRoom, getUserSockets } from '../ws/roomRegistry';
+import { AuthenticatedSocket } from '../ws/server';
 import { RoomMember } from '../generated/prisma/client';
 
 export async function getUserRooms(userId: string) {
@@ -13,7 +15,14 @@ export async function getUserRooms(userId: string) {
     }
     
     const memberships = await roomRepository.getUserRooms(userId);
-    return memberships.map((m) => ({ ...m.room, myRole: m.role }));
+    return memberships.map((m) => ({
+        ...m.room,
+        myRole: m.role,
+        unreadCount: m.unreadCount,
+        members: m.room.type === "DIRECT"
+            ? m.room.members.map((mm) => ({ userId: mm.userId, username: mm.user.username, avatarUrl: mm.user.avatarUrl }))
+            : [],
+    }));
 }
 
 export async function getRoomMembers(roomId: string, requestingUserId: string) {
@@ -44,8 +53,9 @@ export async function getRoomPresences(roomId: string, requestingUserId: string)
     const members = await roomRepository.getRoomMembers(roomId);
     const userIds = members.map(m => m.userId);
 
-    const countKeys = userIds.map(id => `presence:count:${id}`);
-    const counts = await redisClient.mGet(countKeys);
+    const onlineStates = await Promise.all(
+        userIds.map((id) => redisClient.sCard(`presence:sockets:${id}`))
+    );
 
     const heartbeats = await redisClient.zmScore('presence:heartbeats', userIds);
 
@@ -54,7 +64,7 @@ export async function getRoomPresences(roomId: string, requestingUserId: string)
         username: member.user.username,
         avatarUrl: member.user.avatarUrl,
         role: member.role,
-        isOnline: counts[i] !== null && parseInt(counts[i]) > 0,
+        isOnline: onlineStates[i] > 0,
         lastSeen: heartbeats[i] ? new Date(heartbeats[i]).toISOString() : null,
     }));
 }
@@ -70,6 +80,8 @@ export async function getRoomById(roomId: string, requestingUserId: string) {
         throw new AppError(403, "NOT_IN_ROOM", "User is not a member of this room.");
     }
 
+    await roomRepository.resetUnreadCount(roomId, requestingUserId);
+
     return room;
 }
 
@@ -77,6 +89,10 @@ export async function createGroupRoom(creatorId: string, roomName: string) {
     const creator = await userRepository.getUserById(creatorId);
     if (!creator) {
         throw new AppError(404, "USER_NOT_FOUND", "Creator not found!");
+    }
+
+    if (!creator.emailVerified) {
+        throw new AppError(403, "EMAIL_NOT_VERIFIED", "Email not verified.");
     }
 
     const room = await roomRepository.createRoom({ name: roomName, type: "GROUP" });
@@ -91,9 +107,13 @@ export async function createDirectRoom(userId1: string, userId2: string) {
 
     const user1 = await userRepository.getUserById(userId1);
     const user2 = await userRepository.getUserById(userId2);
-    
+
     if (!user1 || !user2) {
         throw new AppError(404, "USER_NOT_FOUND", "One or both users not found!");
+    }
+
+    if (!user1.emailVerified || !user2.emailVerified) {
+        throw new AppError(403, "EMAIL_NOT_VERIFIED", "Email not verified.");
     }
 
     const directKey = [userId1, userId2].sort().join('_');
@@ -107,6 +127,15 @@ export async function createDirectRoom(userId1: string, userId2: string) {
         const room = await roomRepository.createRoom({ type: "DIRECT", directKey: directKey }, tx);
         await roomRepository.addMemberToRoom(room.id, userId1, "MEMBER", tx);
         await roomRepository.addMemberToRoom(room.id, userId2, "MEMBER", tx);
+
+        // Register User B's connected sockets to the new room immediately,
+        // so messages sent right after DM creation reach User B's socket.
+        const userBSockets = getUserSockets(userId2);
+        for (const ws of userBSockets) {
+            addSocketToRoom(room.id, ws);
+            (ws as AuthenticatedSocket).rooms?.add(room.id);
+        }
+
         await broadcastToUser(userId2, {
             type: "DIRECT_ROOM_CREATED",
             payload: { roomId: room.id, withUserId: userId1, timestamp: new Date().toISOString() },
@@ -178,6 +207,14 @@ export async function leaveRoom(userId: string, roomId: string) {
         }
 
         await roomRepository.removeMemberFromRoom(roomId, userId, tx);
+        await broadcastToRoom(roomId, {
+            type: "USER_LEFT",
+            payload: {
+                roomId,
+                userId,
+                timestamp: new Date().toISOString(),
+            },
+        }, userId);
         await broadcastSocketLeave(roomId, userId);
         return { message: "User has left the room." };
     });
@@ -312,8 +349,51 @@ export async function kickMember(roomId: string, kickerId: string, memberId: str
     }
     
     return roomRepository.removeMemberFromRoom(roomId, memberId).then(async () => {
+        await broadcastToRoom(roomId, {
+            type: "USER_LEFT",
+            payload: {
+                roomId,
+                userId: memberId,
+                timestamp: new Date().toISOString(),
+            },
+        }, memberId);
         await broadcastSocketLeave(roomId, memberId);
+        await broadcastToUser(memberId, {
+            type: "USER_LEFT",
+            payload: {
+                roomId,
+                userId: memberId,
+                timestamp: new Date().toISOString(),
+            },
+        });
     });
+}
+
+export async function destroyRoom(roomId: string, requesterId: string) {
+    const room = await roomRepository.getRoomById(roomId);
+    if (!room) {
+        throw new AppError(404, "ROOM_NOT_FOUND", "Room not found!");
+    }
+
+    if (room.type !== "GROUP") {
+        throw new AppError(400, "CANNOT_DELETE_DIRECT_ROOM", "Direct rooms cannot be deleted.");
+    }
+
+    const members = await roomRepository.getRoomMembers(roomId);
+    const requester = members.find((m) => m.userId === requesterId);
+
+    if (requester?.role !== "OWNER") {
+        throw new AppError(403, "OWNER_REQUIRED", "Only the owner can delete the room.");
+    }
+
+    for (const member of members) {
+        await broadcastToUser(member.userId, {
+            type: "ROOM_DELETED",
+            payload: { roomId },
+        });
+    }
+
+    return roomRepository.deleteRoom(roomId);
 }
 
 export async function updateRoomName(roomId: string, requestingUserId: string, name: string) {

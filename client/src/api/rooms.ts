@@ -6,6 +6,8 @@ export interface Room {
   name: string | null;
   version: number;
   myRole?: string;
+  unreadCount?: number;
+  members?: { userId: string; username: string; avatarUrl: string | null }[];
 }
 
 export interface RoomMember {
@@ -33,11 +35,13 @@ export function getRooms() {
 }
 
 export function createRoom(roomName: string) {
-  return request<Room>('/api/rooms', { method: 'POST', body: { roomName } });
+  return request<{ message: string; room: Room }>('/api/rooms', { method: 'POST', body: { roomName } })
+    .then((data) => data.room);
 }
 
 export function createDirectRoom(targetUserId: string) {
-  return request<Room>('/api/rooms/direct', { method: 'POST', body: { targetUserId } });
+  return request<{ message: string; room: Room }>('/api/rooms/direct', { method: 'POST', body: { targetUserId } })
+    .then((data) => data.room);
 }
 
 export function joinRoom(roomId: string) {
@@ -58,6 +62,10 @@ export function getRoomPresences(roomId: string) {
 
 export function getRoomById(roomId: string) {
   return request<Room>(`/api/rooms/${roomId}`);
+}
+
+export function deleteRoom(roomId: string) {
+  return request<{ message: string }>(`/api/rooms/${roomId}`, { method: 'DELETE' });
 }
 
 export function transferOwnership(roomId: string, newOwnerId: string) {

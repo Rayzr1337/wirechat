@@ -7,6 +7,7 @@ import {
   updateProfile,
   changePassword,
   requestEmailChange,
+  resendVerification,
 } from '../api/auth';
 import { resetClientState } from '../lib/resetClientState'
 
@@ -30,7 +31,7 @@ export function useRegister() {
             registerUser(data.username, data.email, data.password),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['me'] });
-            navigate("/", { replace: true });
+            navigate("/verify-email-sent", { replace: true });
         },
     });
 }
@@ -67,6 +68,12 @@ export function useRequestEmailChange() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['me'] });
         },
+    });
+}
+
+export function useResendVerification() {
+    return useMutation({
+        mutationFn: resendVerification,
     });
 }
 

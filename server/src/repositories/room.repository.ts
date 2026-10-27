@@ -3,6 +3,12 @@ import { prisma } from "../libs/prisma";
 
 export type client = PrismaClient | Prisma.TransactionClient;
 
+type RoomWithPeers = {
+    room: Omit<Room, "members"> & { members: (RoomMember & { user: { id: string; username: string; avatarUrl: string | null } })[] };
+    role: RoomMemberRole;
+    unreadCount: number;
+};
+
 class RoomRepository {
     async createRoom(data: Prisma.RoomCreateInput, thisClient: client = prisma): Promise<Room> {
         return thisClient.room.create({ data });
@@ -12,8 +18,17 @@ class RoomRepository {
         return thisClient.room.findUnique({ where: { id } });
     }
 
-    async getUserRooms(userId: string, thisClient: client = prisma) : Promise<{ room: Room; role: RoomMemberRole }[]> {
-        return thisClient.roomMember.findMany({ where: { userId }, include: { room: true } });
+    async getUserRooms(userId: string, thisClient: client = prisma): Promise<RoomWithPeers[]> {
+        return thisClient.roomMember.findMany({
+            where: { userId },
+            include: {
+                room: {
+                    include: {
+                        members: { include: { user: { select: { id: true, username: true, avatarUrl: true } } } },
+                    },
+                },
+            },
+        });
     }
 
     async updateRoom(id: string, data: Prisma.RoomUpdateInput, thisClient: client = prisma): Promise<Room> {
@@ -29,7 +44,10 @@ class RoomRepository {
     }
 
     async getRoomMembers(roomId: string, thisClient: client = prisma): Promise<RoomMember[]> {
-        return thisClient.roomMember.findMany({ where: { roomId }, include: { user: true } });
+        return thisClient.roomMember.findMany({
+            where: { roomId },
+            include: { user: { select: { id: true, username: true, avatarUrl: true } } },
+        });
     }
 
     async getRoomsForUser(userId: string, thisClient: client = prisma): Promise<RoomMember[]> {
@@ -46,6 +64,20 @@ class RoomRepository {
             },
         });
         return member !== null;
+    }
+
+    async resetUnreadCount(roomId: string, userId: string): Promise<void> {
+        await prisma.roomMember.updateMany({
+            where: { roomId, userId },
+            data: { unreadCount: 0 },
+        });
+    }
+
+    async countUnreadsForOthers(roomId: string, senderId: string): Promise<void> {
+        await prisma.roomMember.updateMany({
+            where: { roomId, userId: { not: senderId } },
+            data: { unreadCount: { increment: 1 } },
+        });
     }
 
     async addMemberToRoom(roomId: string, userId: string, role: RoomMemberRole = "MEMBER", thisClient: client = prisma): Promise<RoomMember> {

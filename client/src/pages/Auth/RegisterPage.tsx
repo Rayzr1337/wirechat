@@ -4,8 +4,12 @@ import { Link } from "react-router";
 import { registerSchema, type RegisterInput } from "../../validation";
 import { useRegister } from "../../hooks/useAuth";
 import { messageFor } from "../../api/errors";
+import { EyeIcon } from "../../components/icons";
+import { useState } from "react";
 
 export default function RegisterPage() {
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const { register: registerField, handleSubmit, formState: { errors } } = useForm<RegisterInput>({
         resolver: zodResolver(registerSchema),
     });
@@ -45,23 +49,41 @@ export default function RegisterPage() {
 
                 <div className="space-y-1">
                     <label className="text-xs text-ink-muted">Password</label>
-                    <input
-                        {...registerField("password")}
-                        type="password"
-                        placeholder="Password"
-                        className={`w-full rounded-md bg-surface-3 px-3 py-2 ${errors.password ? "border border-red-500" : ""}`}
-                    />
+                    <div className="relative">
+                        <input
+                            {...registerField("password")}
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Password"
+                            className={`w-full rounded-md bg-surface-3 px-3 py-2 pr-8 ${errors.password ? "border border-red-500" : ""}`}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-surface-2 rounded text-ink-muted"
+                        >
+                            <EyeIcon size={16} color="#8b8b9e" />
+                        </button>
+                    </div>
                     {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
                 </div>
 
                 <div className="space-y-1">
                     <label className="text-xs text-ink-muted">Confirm Password</label>
-                    <input
-                        {...registerField("confirmPassword")}
-                        type="password"
-                        placeholder="Confirm Password"
-                        className={`w-full rounded-md bg-surface-3 px-3 py-2 ${errors.confirmPassword ? "border border-red-500" : ""}`}
-                    />
+                    <div className="relative">
+                        <input
+                            {...registerField("confirmPassword")}
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Confirm Password"
+                            className={`w-full rounded-md bg-surface-3 px-3 py-2 pr-8 ${errors.confirmPassword ? "border border-red-500" : ""}`}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-surface-2 rounded text-ink-muted"
+                        >
+                            <EyeIcon size={16} color="#8b8b9e" />
+                        </button>
+                    </div>
                     {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword.message}</p>}
                 </div>
 

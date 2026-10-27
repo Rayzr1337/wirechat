@@ -5,7 +5,8 @@ import { redisClient } from "../libs/redis";
 import { Duplex } from "stream";
 import { AppError } from "../middleware/error.middleware";
 import type { IncomingMessage, ErrorCode } from "./protocol/schemas";
-import { removeSocketFromRoom, addUserSocket, removeUserSocket } from "./roomRegistry";
+import { removeSocketFromRoom, addUserSocket, removeUserSocket, addSocketToRoom } from "./roomRegistry";
+import { roomRepository } from "../repositories/room.repository";
 
 import { handleJoinRoom } from "./handlers/join.handler";
 import { handleLeaveRoom } from "./handlers/leave.handler";
@@ -14,9 +15,10 @@ import { handleEditMessage } from "./handlers/editMsg.handler";
 import { handleDeleteMessage } from "./handlers/delMsg.handler";
 import { handleTypingIndicator } from "./handlers/typing.handler";
 
-import { broadcastPresenceUpdate } from "./presence";
+import { broadcastPresenceUpdate, addUserConnection, removeUserConnection } from "./presence";
 
 import { isRateLimtied } from "./rateLimiter";
+import { randomUUID } from "crypto";
 
 const PRESENCE_ZSET = "presence:heartbeats";
 
@@ -24,6 +26,7 @@ export interface AuthenticatedSocket extends WebSocket {
   user?: { id: string };
   rooms?: Set<string>;
   missedPings?: number;
+  connectionId?: string;
 }
 
 
@@ -90,12 +93,19 @@ wss.on("connection", async (ws: AuthenticatedSocket) => {
   console.log("New WebSocket connection established");
   ws.rooms = new Set<string>();
   ws.missedPings = 0;
+  ws.connectionId = randomUUID();
   addUserSocket(ws.user!.id, ws);
 
-  const count = await redisClient.incr(`presence:count:${ws.user!.id}`);
+  const wentOnline = await addUserConnection(ws.user!.id, ws.connectionId);
   await redisClient.zAdd(PRESENCE_ZSET, { score: Date.now(), value: ws.user!.id });
 
-  if (count === 1) {
+  const membershipRooms = await roomRepository.getRoomsForUser(ws.user!.id);
+  for (const membership of membershipRooms) {
+    addSocketToRoom(membership.roomId, ws);
+    ws.rooms.add(membership.roomId);
+  }
+
+  if (wentOnline) {
     await broadcastPresenceUpdate(ws.user!.id, true);
   }
 
@@ -178,9 +188,8 @@ wss.on("connection", async (ws: AuthenticatedSocket) => {
 
     if (ws.user) {
       removeUserSocket(ws.user.id, ws);
-      const count = await redisClient.decr(`presence:count:${ws.user.id}`);
-      if (count <= 0) {
-        await redisClient.del(`presence:count:${ws.user.id}`);
+      const wentOffline = await removeUserConnection(ws.user.id, ws.connectionId!);
+      if (wentOffline) {
         await redisClient.zRem(PRESENCE_ZSET, ws.user.id);
         await broadcastPresenceUpdate(ws.user.id, false);
       }

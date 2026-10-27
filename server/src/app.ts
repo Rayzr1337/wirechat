@@ -22,10 +22,10 @@ export function createApp() {
     app.use(cookieParser());
 
     const apiLimit = rateLimit({
-      windowMs: 15 * 60 * 1000, 
-      max: 100, 
-      standardHeaders: 'draft-7', 
-      legacyHeaders: false, 
+      windowMs: 5 * 60 * 1000,
+      max: 1000,
+      standardHeaders: 'draft-7',
+      legacyHeaders: false,
       message: {
         status: 429,
         message: 'Too many requests from this IP, please try again later.'
@@ -33,10 +33,11 @@ export function createApp() {
     });
 
     const authLimit = rateLimit({
-      windowMs: 15 * 60 * 1000, 
-      max: 10, 
-      standardHeaders: 'draft-7', 
-      legacyHeaders: false, 
+      windowMs: 15 * 60 * 1000,
+      max: 10,
+      standardHeaders: 'draft-7',
+      legacyHeaders: false,
+      skip: (req) => req.path === '/ws-ticket',
       message: {
         status: 429,
         message: 'Too many authentication attempts from this IP, please try again later.'

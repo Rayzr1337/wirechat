@@ -1,8 +1,18 @@
 import { messageRepository } from "../repositories/message.repository";
 import { roomRepository } from "../repositories/room.repository";
+import { userRepository } from "../repositories/user.repository";
 import { AppError } from "../middleware/error.middleware";
 
 export async function sendMessage(senderId: string, roomId: string, content: string) {
+    const sender = await userRepository.getUserById(senderId);
+    if (!sender) {
+        throw new AppError(404, "USER_NOT_FOUND", "Sender not found!");
+    }
+
+    if (!sender.emailVerified) {
+        throw new AppError(403, "EMAIL_NOT_VERIFIED", "Email not verified.");
+    }
+
     const room = await roomRepository.getRoomById(roomId);
     if (!room) {
         throw new AppError(404, "ROOM_NOT_FOUND", "Room not found!");
@@ -13,7 +23,7 @@ export async function sendMessage(senderId: string, roomId: string, content: str
         throw new AppError(403, "NOT_IN_ROOM", "You must be a member of the room to send a message.");
     }
 
-    const message = await messageRepository.createMessage(
+    const { message, roomVersion } = await messageRepository.createMessage(
         {
             room : { connect: { id: roomId } },
             sender: { connect: { id: senderId } },
@@ -22,7 +32,9 @@ export async function sendMessage(senderId: string, roomId: string, content: str
         roomId
     );
 
-    return message;
+    await roomRepository.countUnreadsForOthers(roomId, senderId);
+
+    return { message, roomVersion };
 }
 
 export async function editMessage(messageId: string, editorId: string, newContent: string) {
@@ -35,7 +47,7 @@ export async function editMessage(messageId: string, editorId: string, newConten
         throw new AppError(403, "UNAUTHORIZED", "You can only edit your own messages.");
     }
     
-    const updated = await messageRepository.updateMessage(messageId, { 
+    const updated = await messageRepository.updateMessage(messageId, {
         content: newContent,
         editedAt: new Date()
     });
@@ -53,7 +65,7 @@ export async function deleteMessage(messageId: string, deleterId: string) {
         throw new AppError(403, "UNAUTHORIZED", "You can only delete your own messages.");
     }
     
-    const deleted = await messageRepository.deleteMessage(messageId, message.roomId);
+    const deleted = await messageRepository.deleteMessage(messageId);
 
     return deleted;
 }

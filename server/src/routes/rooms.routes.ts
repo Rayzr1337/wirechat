@@ -65,3 +65,5 @@ roomsRouter.patch(
   asyncErrorHandler(roomController.updateRoomName)
 );
 
+roomsRouter.delete("/:roomId", isUser, asyncErrorHandler(roomController.deleteRoom));
+

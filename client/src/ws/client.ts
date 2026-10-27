@@ -19,6 +19,7 @@ function getWsUrl() {
 
 async function fetchTicket(): Promise<string> {
   const res = await fetch('/api/auth/ws-ticket', {
+    method: 'POST',
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to fetch WS ticket');
@@ -45,7 +46,11 @@ export async function connect(onMessage: (data: OutgoingMessage) => void) {
   messageHandler = onMessage;
   isManuallyDisconnected = false;
   reconnectAttempts = 0;
-  await establishConnection();
+  try {
+    await establishConnection();
+  } catch {
+    // Silently fail — app should still work without WebSocket
+  }
 }
 
 export function disconnect() {

@@ -4,8 +4,11 @@ import { Link } from "react-router";
 import { loginSchema, type LoginInput } from "../../validation";
 import { useLogin } from "../../hooks/useAuth";
 import { messageFor } from "../../api/errors";
+import { EyeIcon } from "../../components/icons";
+import { useState } from "react";
 
 export default function LoginPage() {
+    const [showPassword, setShowPassword] = useState(false);
     const { register, handleSubmit, formState: { errors } } = useForm<LoginInput>({
         resolver: zodResolver(loginSchema),
     });
@@ -33,12 +36,21 @@ export default function LoginPage() {
 
                 <div className="space-y-1">
                     <label className="text-xs text-ink-muted">Password</label>
-                    <input
-                        {...register("password")}
-                        type="password"
-                        placeholder="Password"
-                        className={`w-full rounded-md bg-surface-3 px-3 py-2 ${errors.password ? "border border-red-500" : ""}`}
-                    />
+                    <div className="relative">
+                        <input
+                            {...register("password")}
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Password"
+                            className={`w-full rounded-md bg-surface-3 px-3 py-2 pr-8 ${errors.password ? "border border-red-500" : ""}`}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-surface-2 rounded text-ink-muted"
+                        >
+                            <EyeIcon size={16} color="#8b8b9e" />
+                        </button>
+                    </div>
                     {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
                 </div>
 

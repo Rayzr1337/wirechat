@@ -34,12 +34,14 @@ export const deleteMessageSchema = z.object({
 // Outbound messages:
 export const outboundMessageSchema = z.object({
     type: z.literal("MESSAGE"),
-    payload: z.object({ 
+    payload: z.object({
         id: z.uuid(),
         roomId: z.uuid(),
-        senderId: z.uuid(), 
+        senderId: z.uuid(),
         content: z.string().trim().min(1).max(2000),
-        createdAt: z.iso.datetime()
+        createdAt: z.iso.datetime(),
+        editedAt: z.iso.datetime().nullable(),
+        roomVersion: z.number().int()
     })
 });
 
@@ -51,6 +53,11 @@ export const userJoinedSchema = z.object({
 export const userLeftSchema = z.object({
     type: z.literal("USER_LEFT"),
     payload: z.object({ roomId: z.uuid(), userId: z.uuid(), timestamp: z.iso.datetime() })
+});
+
+export const roomDeletedSchema = z.object({
+    type: z.literal("ROOM_DELETED"),
+    payload: z.object({ roomId: z.uuid() })
 });
 
 export const directRoomCreatedSchema = z.object({
@@ -80,19 +87,21 @@ export const userUpdatedSchema = z.object({
 
 export const messageEditedSchema = z.object({
     type: z.literal("MESSAGE_EDITED"),
-    payload: z.object({ 
+    payload: z.object({
         id: z.uuid(),
         roomId: z.uuid(),
         content: z.string().trim().min(1).max(2000),
-        editedAt: z.iso.datetime()
+        editedAt: z.iso.datetime(),
+        roomVersion: z.number().int()
     })
 });
 
 export const messageDeletedSchema = z.object({
     type: z.literal("MESSAGE_DELETED"),
-    payload: z.object({ 
+    payload: z.object({
         id: z.uuid(),
-        roomId: z.uuid()
+        roomId: z.uuid(),
+        roomVersion: z.number().int()
     })
 });
 
@@ -105,6 +114,7 @@ export const errorCodeList = [
   "UNAUTHORIZED",
   "NOT_IN_ROOM",
   "EMAIL_NOT_VERIFIED",
+  "CANNOT_DELETE_DIRECT_ROOM",
   "CONFLICT",
   "INVALID_TOKEN",
   "ALREADY_ADMIN",
@@ -154,6 +164,7 @@ export const outgoingMessageSchema = z.discriminatedUnion("type", [
     outboundMessageSchema,
     userJoinedSchema,
     userLeftSchema,
+    roomDeletedSchema,
     directRoomCreatedSchema,
     outboundTypingIndicatorSchema,
     presenceUpdateSchema,
