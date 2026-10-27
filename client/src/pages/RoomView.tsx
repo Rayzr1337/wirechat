@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useLayoutEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useRoomChannel } from '../ws/useRoomChannel';
 import { useInfiniteMessages } from '../hooks/useMessages';
@@ -12,7 +12,7 @@ import { MessageComposer } from '../components/MessageComposer';
 import { TypingIndicator } from '../components/TypingIndicator';
 import { MemberListItem, type MemberAction } from '../components/MemberListItem';
 import { GroupIcon } from '../components';
-import { UsersIcon, HashIcon, XIcon, ArrowLeftIcon } from '../components/icons';
+import { UsersIcon, XIcon, ArrowLeftIcon } from '../components/icons';
 import { useUiStore } from '../stores/uiStore';
 import { usePresenceStore } from '../stores/presenceStore';
 import { useSocketStore } from '../stores/socketStore';
@@ -27,14 +27,17 @@ export function RoomView() {
   const {
     data: pages,
     isPending: messagesPending,
-    isFetching: isFetchingNextPage,
+    isFetchingNextPage,
     fetchNextPage,
     hasNextPage,
   } = useInfiniteMessages(roomId ?? null);
 
-  const messages = pages?.pages
-    .reverse()
-    .flatMap((page) => [...page].reverse()) ?? [];
+  const messages = useMemo(
+    () => (pages ? [...pages.pages].reverse().flatMap(page => [...page].reverse()) : []),
+    [pages]);
+
+  const lastPage = pages?.pages.at(-1);
+  const hasMorePages = lastPage ? lastPage.length >= 50 : hasNextPage;
   const { data: members = [] } = useRoomMembers(roomId ?? null);
   const { membersSidebarOpen, toggleMembersSidebar, addToast, forcedExit, setForcedExit } = useUiStore();
   const skipNotFoundRef = useRef<string | null>(null);
@@ -157,10 +160,13 @@ export function RoomView() {
   const prevScrollHeightRef = useRef(0);
   const isInitialRef = useRef(true);
   const prevRoomIdRef = useRef<string | null>(null);
+  const firstMessageIdRef = useRef<string | null>(null);
+  const isFetchingOlderRef = useRef(false);
+  const fetchLockRef = useRef(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
+    if (!el || isFetchingNextPage) return;
 
     const roomChanged = prevRoomIdRef.current !== (roomId ?? null);
     prevRoomIdRef.current = roomId ?? null;
@@ -169,19 +175,41 @@ export function RoomView() {
       el.scrollTop = el.scrollHeight;
       isInitialRef.current = false;
       prevScrollHeightRef.current = el.scrollHeight;
+      const first = el.querySelector('[data-message-id]');
+      firstMessageIdRef.current = first?.getAttribute('data-message-id') ?? null;
       return;
     }
 
-    const wasAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 50;
     const prevHeight = prevScrollHeightRef.current;
-    prevScrollHeightRef.current = el.scrollHeight;
+    const newHeight = el.scrollHeight;
+    prevScrollHeightRef.current = newHeight;
+
+    const wasAtBottom = el.scrollTop + el.clientHeight >= prevHeight - 50;
+
+    if (isFetchingOlderRef.current) {
+      isFetchingOlderRef.current = false;
+      if (prevHeight > 0 && newHeight > prevHeight) {
+        requestAnimationFrame(() => {
+          el.scrollTop += newHeight - prevHeight;
+        });
+      }
+      return;
+    }
 
     if (wasAtBottom) {
-      el.scrollTop = el.scrollHeight;
-    } else if (prevHeight > 0 && el.scrollHeight > prevHeight) {
-      el.scrollTop = el.scrollHeight - prevHeight;
+      el.scrollTop = newHeight;
+    } else if (prevHeight > 0 && newHeight > prevHeight) {
+      const first = el.querySelector('[data-message-id]');
+      const currentFirstId = first?.getAttribute('data-message-id') ?? null;
+      if (currentFirstId !== firstMessageIdRef.current) {
+        firstMessageIdRef.current = currentFirstId;
+        requestAnimationFrame(() => {
+          el.scrollTop += newHeight - prevHeight;
+        });
+      }
+      // New message appended while scrolled up: freeze position
     }
-  }, [pages, roomId]);
+  }, [pages, roomId, isFetchingNextPage]);
 
   if (!roomId) {
     return null;
@@ -217,12 +245,6 @@ export function RoomView() {
           <button className="md:hidden p-1 hover:bg-surface-2 rounded" onClick={() => setMembersDrawerOpen(true)}>
             <UsersIcon size={17} color="#7c6ff0" />
           </button>
-          {!isDirect && (
-            <button onClick={() => setInviteModalOpen(true)}
-                    className="p-1.5 hover:bg-surface-2 rounded">
-              <HashIcon size={16} color="#7c6ff0" />
-            </button>
-          )}
         </div>
 
         {!connected && (
@@ -232,10 +254,17 @@ export function RoomView() {
         )}
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4">
-          {!messagesPending && hasNextPage && !isFetchingNextPage && (
+          {!messagesPending && hasMorePages && !isFetchingNextPage && (
             <div className="text-center mb-2">
               <button
-                onClick={() => fetchNextPage()}
+                onClick={() => {
+                  if (fetchLockRef.current || isFetchingNextPage) return;
+                  fetchLockRef.current = true;
+                  isFetchingOlderRef.current = true;
+                  fetchNextPage().finally(() => {
+                    fetchLockRef.current = false;
+                  });
+                }}
                 className="text-xs text-ink hover:text-ink hover:underline"
               >
                 Load older messages
@@ -308,6 +337,10 @@ export function RoomView() {
           </div>
           {!isDirect && (
             <div className="shrink-0 px-3 mt-3 pt-3 space-y-2 border-t border-line">
+              <button onClick={() => setInviteModalOpen(true)}
+                      className="w-full py-2 mb-2 rounded-md border border-line text-ink text-sm hover:bg-surface-2">
+               Invite Members 
+              </button>
               <button onClick={handleLeaveRoom}
                       className="w-full py-2 rounded-md border border-line text-ink text-sm hover:bg-surface-2">
                 Leave Room

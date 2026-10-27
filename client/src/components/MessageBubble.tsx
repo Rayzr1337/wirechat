@@ -70,7 +70,7 @@ export function MessageBubble({ message, isSelf, showTimestamp, grouped, senderN
   };
 
   return (
-    <div className={`flex gap-3 ${grouped ? "mt-0.5" : "mt-3"}`}>
+    <div className={`flex gap-3 ${grouped ? "mt-0.5" : "mt-3"}`} data-message-id={message.id}>
       <div className="w-9 shrink-0">
         {!grouped && (
           <div className="flex justify-center">

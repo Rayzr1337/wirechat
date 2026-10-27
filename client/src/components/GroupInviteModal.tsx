@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { XIcon, HashIcon } from './icons';
+import { XIcon } from './icons';
 
 interface GroupInviteModalProps {
   open: boolean;
@@ -43,7 +43,6 @@ export function GroupInviteModal({ open, onClose, groupId }: GroupInviteModalPro
           </button>
         </div>
         <div className="mt-3 flex items-center gap-2 text-xs text-ink-dim">
-          <HashIcon size={14} color="#7c6ff0" />
           <span className="font-mono">{groupId}</span>
         </div>
         <p className="mt-2 text-xs text-ink-muted">
