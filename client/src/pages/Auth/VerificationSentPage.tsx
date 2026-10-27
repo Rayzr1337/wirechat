@@ -29,7 +29,7 @@ export default function VerificationSentPage() {
                 </button>
                 <p className="text-xs text-ink-muted text-center">
                     Already verified?{" "}
-                    <Link to="/login" className="text-accent hover:text-accent-hover font-medium">Sign in</Link>
+                    <Link to="/" className="text-accent hover:text-accent-hover font-medium">Back to wirechat.</Link>
                 </p>
             </div>
         </div>

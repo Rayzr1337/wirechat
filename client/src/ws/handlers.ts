@@ -43,7 +43,9 @@ export function handleInbound(data: OutgoingMessage) {
     }
 
     case 'DIRECT_ROOM_CREATED': {
+      const { roomId } = data.payload;
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      useSocketStore.getState().send('JOIN_ROOM', { roomId });
       break;
     }
 
