@@ -2,12 +2,14 @@ import express, { type Request, type Response, type NextFunction } from "express
 import cookieParser from "cookie-parser";
 import { errorHandler } from "./middleware/error.middleware";
 import { AppError } from "./middleware/error.middleware";
+import { redisClient } from "./libs/redis";
 
 import { authRouter } from "./routes/auth.routes";
 import { usersRouter } from "./routes/user.routes";
 import { messagesRouter } from "./routes/messages.routes";
 import { roomsRouter } from "./routes/rooms.routes";
 
+import { RedisStore } from "rate-limit-redis";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 
@@ -29,7 +31,11 @@ export function createApp() {
       message: {
         status: 429,
         message: 'Too many requests from this IP, please try again later.'
-      }
+      },
+      store: new RedisStore({
+          sendCommand: (...args: string[]) => redisClient.sendCommand(args),
+          prefix: "rl:api:",
+      }),
     });
 
     const authLimit = rateLimit({
@@ -41,7 +47,11 @@ export function createApp() {
       message: {
         status: 429,
         message: 'Too many authentication attempts from this IP, please try again later.'
-      }
+      },
+      store: new RedisStore({
+          sendCommand: (...args: string[]) => redisClient.sendCommand(args),
+          prefix: "rl:auth:",
+      }),
     });
 
     app.use("/api", apiLimit);

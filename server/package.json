@@ -30,6 +30,7 @@
     "jsonwebtoken": "^9.0.3",
     "nodemailer": "^10.0.11",
     "pg": "^8.23.0",
+    "rate-limit-redis": "^6.0.2",
     "redis": "^6.2.1",
     "ws": "^8.21.3",
     "zod": "^4.6.5"
