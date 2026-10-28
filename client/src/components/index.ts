@@ -10,4 +10,4 @@ export { GroupInviteModal } from './GroupInviteModal';
 export { UserModal } from './UserModal';
 export { Toast } from './Toast';
 export { Toasts } from './Toasts';
-export { Icon, HashIcon, SettingsIcon, SearchIcon, UsersIcon, PlusIcon, SmileIcon, SendIcon, LogoutIcon, MailIcon, BellIcon, ChevronDownIcon, ChevronUpIcon, ArrowLeftIcon, XIcon, PencilIcon, TrashIcon, UserIcon, ClockIcon, DotsIcon, WarningIcon, ShieldIcon } from './icons';
+export { Icon, SettingsIcon, SearchIcon, UsersIcon, PlusIcon, SmileIcon, SendIcon, LogoutIcon, MailIcon, BellIcon, ChevronDownIcon, ChevronUpIcon, ArrowLeftIcon, XIcon, PencilIcon, TrashIcon, UserIcon, ClockIcon, DotsIcon, WarningIcon, ShieldIcon } from './icons';

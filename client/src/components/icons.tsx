@@ -9,7 +9,6 @@ export function Icon({ path, size = 18, color = "#8b8b9e", onClick }: { path: st
 }
 
 const ICONS = {
-  hash: "M4 9h16M4 15h16M10 3L8 21M16 3l-2 18",
   settings: "M12 15a3 3 0 100-6 3 3 0 000 6zM12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.38a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z",
   search: "M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.35-4.35",
   users: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75",
@@ -35,9 +34,6 @@ const ICONS = {
 
 export type IconProps = { color?: string; size?: number; onClick?: () => void };
 
-export function HashIcon(props: IconProps) {
-  return <Icon path={ICONS.hash} {...props} />;
-}
 export function SettingsIcon(props: IconProps) {
   return <Icon path={ICONS.settings} {...props} />;
 }
