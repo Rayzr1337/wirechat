@@ -128,13 +128,13 @@ export async function createDirectRoom(userId1: string, userId2: string) {
         await roomRepository.addMemberToRoom(room.id, userId1, "MEMBER", tx);
         await roomRepository.addMemberToRoom(room.id, userId2, "MEMBER", tx);
 
-        // Register User B's connected sockets to the new room immediately,
-        // so messages sent right after DM creation reach User B's socket.
         const userBSockets = getUserSockets(userId2);
         for (const ws of userBSockets) {
             addSocketToRoom(room.id, ws);
             (ws as AuthenticatedSocket).rooms?.add(room.id);
         }
+
+        await redisClient.publish(`room_register:${room.id}`, JSON.stringify({ userId: userId2 }));
 
         await broadcastToUser(userId2, {
             type: "DIRECT_ROOM_CREATED",

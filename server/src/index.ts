@@ -1,10 +1,9 @@
-import { server } from "./server";
-import "./ws/server"; 
+import { createHttpServer, registerShutdown } from "./server";
 import { prisma } from "./libs/prisma";
 import { redisClient as redis } from "./libs/redis";
-import { initBroadcastListener, closeBroadcastListener } from "./ws/broadcast";
-import { startHeartbeat, stopHeartbeat } from "./ws/heartbeat";
-import { startPresenceSweep, stopPresenceSweep } from "./ws/presence";
+import { initBroadcastListener } from "./ws/broadcast";
+import { startHeartbeat } from "./ws/heartbeat";
+import { startPresenceSweep } from "./ws/presence";
 
 const PORT = process.env.PORT || 3000;
 
@@ -19,7 +18,10 @@ async function main() {
         console.error("Failed to initialize broadcast listener:", error);
         process.exit(1);
     }
-    
+
+    const server = createHttpServer();
+    registerShutdown(server);
+
     startHeartbeat();
     startPresenceSweep();
     
@@ -32,24 +34,6 @@ async function main() {
     server.listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`);
     });
-
-    const shutdown = async (signal: NodeJS.Signals) => {
-        console.log(`Received ${signal}, shutting down`);
-        await new Promise<void>((resolve) => server.close(() => resolve()));
-        console.log("HTTP server closed");
-        await prisma.$disconnect();
-
-        stopHeartbeat();
-        stopPresenceSweep();
-
-        await redis.quit();
-        await closeBroadcastListener();
-        console.log("Prisma and redis disconnected.");
-        process.exit(0);
-    };
-
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
 }
 
 main().catch((err) => {

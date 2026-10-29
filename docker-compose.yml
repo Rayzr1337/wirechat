@@ -17,8 +17,6 @@ services:
     env_file:
       - ./.env.docker
     command: sh -c "npx prisma migrate deploy && node dist/index.mjs"
-    ports:
-      - "${PORT:-4750}:3000"
     depends_on:
       db:
         condition: service_healthy

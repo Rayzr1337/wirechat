@@ -1,5 +1,5 @@
 import { redisClient } from "../libs/redis";
-import { getLocalRoomSockets, getUserSockets, removeUserFromRoom } from "./roomRegistry";
+import { getLocalRoomSockets, getUserSockets, removeUserFromRoom, addSocketToRoom } from "./roomRegistry";
 import type { OutgoingMessage } from "./protocol/schemas";
 import { AuthenticatedSocket } from "./server";
 
@@ -54,6 +54,16 @@ export async function initBroadcastListener() {
         const roomId = channel.split(":")[1];
         const { userId } = JSON.parse(message) as { userId: string };
         removeUserFromRoom(roomId, userId);
+    });
+
+    await subscriber.pSubscribe("room_register:*", (message, channel) => {
+        const roomId = channel.split(":")[1];
+        const { userId } = JSON.parse(message) as { userId: string };
+        const sockets = getUserSockets(userId);
+        for (const ws of sockets) {
+            addSocketToRoom(roomId, ws);
+            (ws as AuthenticatedSocket).rooms?.add(roomId);
+        }
     });
 
     subscriberReady = true;
