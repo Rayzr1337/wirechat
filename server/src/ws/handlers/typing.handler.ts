@@ -11,7 +11,8 @@ export async function handleTypingIndicator(userId: string, ws: AuthenticatedSoc
         type: "TYPING",
         payload: {
             roomId: incomingMessage.payload.roomId,
-            userId
+            userId,
+            isTyping: incomingMessage.payload.isTyping
         }
     };
 

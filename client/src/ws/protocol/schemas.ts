@@ -18,7 +18,7 @@ export const inboundMessageSchema = z.object({
 
 export const typingIndicatorSchema = z.object({
     type: z.literal("TYPING"),
-    payload: z.object({ roomId: z.uuid() })
+    payload: z.object({ roomId: z.uuid(), isTyping: z.boolean() })
 });
 
 export const editMessageSchema = z.object({
@@ -67,7 +67,7 @@ export const directRoomCreatedSchema = z.object({
 
 export const outboundTypingIndicatorSchema = z.object({
     type: z.literal("TYPING"),
-    payload: z.object({ roomId: z.uuid(), userId: z.uuid() })
+    payload: z.object({ roomId: z.uuid(), userId: z.uuid(), isTyping: z.boolean() })
 });
 
 export const presenceUpdateSchema = z.object({

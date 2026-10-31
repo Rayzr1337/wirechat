@@ -14,10 +14,10 @@ export function handleInbound(data: OutgoingMessage) {
 
   switch (data.type) {
     case 'MESSAGE': {
-      const { roomId } = data.payload;
+      const { roomId, roomVersion } = data.payload;
       queryClient.invalidateQueries({ queryKey: ['messages', roomId] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
-      useUnreadStore.getState().setLastSeenVersion(roomId, data.payload.roomVersion);
+      useUnreadStore.getState().setLastSeenVersion(roomId, roomVersion);
       break;
     }
 
@@ -50,8 +50,12 @@ export function handleInbound(data: OutgoingMessage) {
     }
 
     case 'TYPING': {
-      const { roomId, userId } = data.payload;
-      typingStore.setTyping(roomId, userId, true);
+      const { roomId, userId, isTyping } = data.payload;
+      if (isTyping === false) {
+        typingStore.clearTyping(roomId, userId);
+      } else {
+        typingStore.setTyping(roomId, userId, true);
+      }
       break;
     }
 
