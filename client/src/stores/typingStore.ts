@@ -7,7 +7,7 @@ const timers = new Map<string, ReturnType<typeof setTimeout>>
 export interface TypingStore {
   typing: Record<string, Set<string>>
   setTyping: (roomId: string, userId: string, isTyping: boolean) => void
-  clearTyping: (roomId: string) => void
+  clearTyping: (roomId: string, userId: string) => void
 }
 
 export const useTypingStore = create<TypingStore>((set) => ({
@@ -48,11 +48,36 @@ export const useTypingStore = create<TypingStore>((set) => ({
     })
   },
 
-  clearTyping: (roomId) => {
+  clearTyping: (roomId: string, userId: string) => {
+    const timerKey = `${roomId}:${userId}`
+
+    const existing = timers.get(timerKey)
+    if (existing) {
+        clearTimeout(existing)
+        timers.delete(timerKey)
+    }
+
     set((state) => {
-      const next = { ...state.typing }
-      delete next[roomId]
-      return { typing: next }
+        const current = state.typing[roomId]
+        if (!current) {
+            return state
+        }
+
+        const next = new Set(current)
+        next.delete(userId)
+
+        if (next.size === 0) {
+            const updated = { ...state.typing }
+            delete updated[roomId]
+            return { typing: updated }
+        }
+
+        return {
+            typing: {
+                ...state.typing,
+                [roomId]: next,
+            },
+        }
     })
   },
 }))

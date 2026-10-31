@@ -23,4 +23,13 @@ export async function handleMessage(userId: string, ws: AuthenticatedSocket, inc
     };
     
     await broadcastToRoom(incomingMessage.payload.roomId, outMsg);
+
+    await broadcastToRoom(incomingMessage.payload.roomId, {
+        type: "TYPING",
+        payload: {
+            roomId: incomingMessage.payload.roomId,
+            userId: msg.senderId ?? "",
+            isTyping: false
+        }
+    }, msg.senderId ?? "");
 }

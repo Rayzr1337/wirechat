@@ -137,6 +137,9 @@ export function RoomsLayout() {
             <div className="h-14 flex items-center justify-between px-4 shrink-0 border-b border-line sm:hidden">
               <span className="font-display font-semibold text-lg tracking-tight text-ink">wirechat</span>
             </div>
+            <div className="h-14 flex items-center justify-between px-4 shrink-0 border-b border-line hidden sm:flex">
+              <span className="font-display font-semibold text-lg tracking-tight text-ink">wirechat</span>
+            </div>
             <div className="flex-1 overflow-y-auto px-2 py-3 space-y-5">
               <div>
                 <div className="px-2 mb-1.5 text-xs text-ink-dim">Direct messages</div>

@@ -39,6 +39,16 @@ export function getUserSockets(userId: string): Set<WebSocket> {
   return userSockets.get(userId) ?? new Set();
 }
 
+export function getAllSockets(): Set<WebSocket> {
+  const all = new Set<WebSocket>();
+  for (const sockets of userSockets.values()) {
+    for (const ws of sockets) {
+      all.add(ws);
+    }
+  }
+  return all;
+}
+
 export function removeUserFromRoom(roomId: string, userId: string) {
   const sockets = roomSockets.get(roomId);
   if (!sockets) return;

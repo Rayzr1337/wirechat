@@ -1,5 +1,5 @@
-import { server } from "../server";
 import { WebSocketServer, WebSocket } from "ws";
+import { type Server } from "node:http";
 import { validateIncomingMessage } from "./protocol/validate";
 import { redisClient } from "../libs/redis";
 import { Duplex } from "stream";
@@ -60,35 +60,36 @@ export function rejectUpgrade(socket: Duplex, statusCode: number, reason: string
 
 export const wss = new WebSocketServer({ noServer: true });
 
-server.on("upgrade", async (request, socket, head) => {
-    const parsedUrl = new URL(request.url || "", `http://${request.headers.host}`);
-    const ticket = parsedUrl.searchParams.get("ticket");
+export function attachWebsocketServer(server: Server) {
+    server.on("upgrade", async (request, socket, head) => {
+        const parsedUrl = new URL(request.url || "", `http://${request.headers.host}`);
+        const ticket = parsedUrl.searchParams.get("ticket");
 
-    if (!ticket) {
-        return rejectUpgrade(socket, 400, "Invalid or missing ticket.");
-    }
+        if (!ticket) {
+            return rejectUpgrade(socket, 400, "Invalid or missing ticket.");
+        }
 
-    const userId = await redisClient.getDel(`ticket:${ticket}`).then((userId) => {
-        if (!userId) {
-            return rejectUpgrade(socket, 401, "Invalid or expired ticket.");
-        } 
+        const userId = await redisClient.getDel(`ticket:${ticket}`).then((userId) => {
+            if (!userId) {
+                return rejectUpgrade(socket, 401, "Invalid or expired ticket.");
+            } 
 
-        return userId;
-      }).catch((err) => {
-        console.error("Redis error:", err);
-        return rejectUpgrade(socket, 500, "Internal server error.");
+            return userId;
+          }).catch((err) => {
+            console.error("Redis error:", err);
+            return rejectUpgrade(socket, 500, "Internal server error.");
+        });
+
+        if (!userId) return;
+        const user = { id: userId };
+
+        wss.handleUpgrade(request, socket, head, (ws) => {
+            const authSocket = ws as AuthenticatedSocket;
+            authSocket.user = user;
+            wss.emit("connection", authSocket, request);
+        });
     });
-
-    if (!userId) return;
-    const user = { id: userId };
-
-    wss.handleUpgrade(request, socket, head, (ws) => {
-        const authSocket = ws as AuthenticatedSocket;
-        authSocket.user = user;
-        wss.emit("connection", authSocket, request);
-    });
-});
-
+}
 wss.on("connection", async (ws: AuthenticatedSocket) => {
   console.log("New WebSocket connection established");
   ws.rooms = new Set<string>();

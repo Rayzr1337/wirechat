@@ -114,8 +114,8 @@ export function MessageBubble({ message, isSelf, showTimestamp, grouped, senderN
             style={{ color: "#c8c8d8" }}
           />
         ) : (
-          <div className={`text-sm leading-relaxed flex items-baseline justify-between gap-2 ${isSelf ? "text-right" : ""}`}>
-            <div style={{ color: "#c8c8d8" }}>{message.content}</div>
+          <div className={`text-sm leading-relaxed flex items-baseline justify-between gap-2 ${isSelf ? "text-right" : ""}`} dir="ltr" style={{ direction: "ltr" }}>
+            <div style={{ color: "#c8c8d8", direction: "ltr" }}>{message.content}</div>
             {(message.editedAt || canModify) && (
               <div ref={menuAnchorRef} className="relative shrink-0">
                 {grouped && message.editedAt && (

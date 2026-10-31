@@ -55,7 +55,12 @@ export function useRoomChannel(roomId: string | null) {
   }, [roomId, connected]);
 
   const sendMessage = useCallback((content: string) => {
+    if (typingTimerRef.current) {
+      clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = null;
+    }
     send('MESSAGE', { roomId, content });
+    send('TYPING', { roomId, isTyping: false });
   }, [send, roomId]);
 
   const editMessage = useCallback((messageId: string, content: string) => {
@@ -71,7 +76,7 @@ export function useRoomChannel(roomId: string | null) {
       clearTimeout(typingTimerRef.current);
     }
     typingTimerRef.current = setTimeout(() => {
-      sendRef.current('TYPING', { roomId: roomIdRef.current });
+      sendRef.current('TYPING', { roomId: roomIdRef.current, isTyping: true });
       typingTimerRef.current = null;
     }, 300);
   }, []);
